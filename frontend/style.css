@@ -38,7 +38,7 @@ label {
 
 input[type="email"],
 input[type="password"],
-input[type="text"] { /* Đã thêm input[type="text"] */
+input[type="text"] {
     width: calc(100% - 22px);
     padding: 10px;
     border: 1px solid #dddfe2;
@@ -414,7 +414,6 @@ a:hover {
     font-size: 15px;
     padding: 0;
     width: 200px;
-    /* MỚI: Thêm style cho input trong search-box khi nó là click-only */
     cursor: pointer;
 }
 
@@ -596,4 +595,221 @@ a:hover {
     font-size: 14px;
     margin-left: 10px;
     margin-top: 0;
+}
+
+/* Styles riêng cho trang chat */
+.chat-container {
+    display: flex;
+    height: calc(100vh - 56px - 40px); /* Full height trừ navbar và margin */
+    margin: 20px auto;
+    max-width: 1000px; /* Chiều rộng tối đa cho khung chat */
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.chat-sidebar {
+    width: 300px;
+    border-right: 1px solid #dddfe2;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: #f0f2f5;
+}
+
+.chat-sidebar h3 {
+    margin-top: 0;
+    color: #1877f2;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.conversation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.conversation-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.conversation-item:hover {
+    background-color: #e4e6eb;
+}
+
+.conversation-item.active {
+    background-color: #cfe2ff; /* Màu xanh nhẹ khi active */
+    font-weight: bold;
+}
+
+.conversation-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+    position: relative;
+}
+
+.conversation-avatar .online-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background-color: #4CAF50; /* Green */
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.conversation-info .username {
+    font-weight: bold;
+    color: #050505;
+}
+
+.conversation-info .last-message {
+    font-size: 0.85em;
+    color: #606770;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.chat-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    padding: 15px;
+    border-bottom: 1px solid #dddfe2;
+    background-color: #fff;
+    font-weight: bold;
+    color: #1877f2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.chat-header .chat-partner-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.messages-display {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #f0f2f5; /* Nền của khung tin nhắn */
+}
+
+.message-item {
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.message-item.sent {
+    justify-content: flex-end; /* Tin nhắn của mình nằm bên phải */
+}
+
+.message-item.received {
+    justify-content: flex-start; /* Tin nhắn của người khác nằm bên trái */
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    line-height: 1.4;
+    word-wrap: break-word; /* Đảm bảo nội dung xuống dòng */
+}
+
+.message-item.sent .message-bubble {
+    background-color: #1877f2;
+    color: white;
+}
+
+.message-item.received .message-bubble {
+    background-color: #e4e6eb;
+    color: #050505;
+}
+
+.message-sender-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-top: auto; /* Căn avatar xuống dưới cùng của bubble */
+    margin-right: 8px; /* Khoảng cách với bubble */
+}
+.message-item.sent .message-sender-avatar {
+    order: 2; /* Đổi thứ tự để avatar ở bên phải */
+    margin-right: 0;
+    margin-left: 8px;
+}
+
+
+.chat-input-area {
+    padding: 15px;
+    border-top: 1px solid #dddfe2;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-input-area input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 1px solid #dddfe2;
+    border-radius: 20px;
+    outline: none;
+    font-size: 15px;
+}
+
+.chat-input-area button {
+    background-color: #1877f2;
+    color: white;
+    border: none;
+    border-radius: 50%; /* Nút tròn */
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    margin-top: 0; /* Bỏ margin-top mặc định */
+}
+
+.chat-input-area button:hover {
+    background-color: #166fe5;
+}
+.no-chat-selected {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100%;
+    color: #606770;
+    font-size: 1.1em;
+    text-align: center;
+}
+.no-chat-selected i {
+    font-size: 3em;
+    margin-bottom: 10px;
 }

@@ -51,7 +51,7 @@
                     messageElement.textContent = result.message;
                     messageElement.style.color = 'green';
                     localStorage.setItem('loggedInUserEmail', email);
-                    localStorage.setItem('loggedInUsername', result.user.username); // MỚI: Lưu username
+                    localStorage.setItem('loggedInUsername', result.user.username);
                     setTimeout(() => {
                         window.location.href = 'home.html';
                     }, 1000);

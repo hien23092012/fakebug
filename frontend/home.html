@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Các style bổ sung chỉ dành riêng cho home.html nếu cần */
         .container {
             max-width: 700px;
         }
@@ -35,7 +34,7 @@
         </div>
         <div class="navbar-right">
             <a href="#" class="nav-icon-circle"><i class="fas fa-th-large"></i></a>
-            <a href="#" class="nav-icon-circle"><i class="fab fa-facebook-messenger"></i></a>
+            <a href="chat.html" class="nav-icon-circle"><i class="fab fa-facebook-messenger"></i></a>
             <a href="#" class="nav-icon-circle"><i class="fas fa-bell"></i></a>
             <a href="profile.html" class="nav-icon-circle profile-avatar-small">
                 <img id="smallUserAvatar" src="https://via.placeholder.com/30" alt="Avatar">
@@ -46,7 +45,8 @@
 
     <div class="container">
         <div class="header">
-            <h2>Chào mừng, <span id="displayUsername">Người dùng!</span></h2> <button id="logoutButton" class="logout-btn">Đăng xuất</button>
+            <h2>Chào mừng, <span id="displayUsername">Người dùng!</span></h2>
+            <button id="logoutButton" class="logout-btn">Đăng xuất</button>
         </div>
 
         <div class="post-form">
@@ -66,7 +66,7 @@
     <script>
         const API_BASE_URL = 'http://localhost:3000/api';
 
-        const displayUsernameElement = document.getElementById('displayUsername'); // Lấy tham chiếu mới
+        const displayUsernameElement = document.getElementById('displayUsername');
         const logoutButton = document.getElementById('logoutButton');
         const postContentInput = document.getElementById('postContent');
         const createPostButton = document.getElementById('createPostButton');
@@ -77,10 +77,10 @@
         const smallUserAvatar = document.getElementById('smallUserAvatar');
 
         const loggedInUserEmail = localStorage.getItem('loggedInUserEmail');
-        const loggedInUsername = localStorage.getItem('loggedInUsername'); // Lấy username từ localStorage
+        const loggedInUsername = localStorage.getItem('loggedInUsername');
 
         if (loggedInUserEmail) {
-            displayUsernameElement.textContent = loggedInUsername || loggedInUserEmail; // Hiển thị username
+            displayUsernameElement.textContent = loggedInUsername || loggedInUserEmail;
             fetchSmallAvatar(loggedInUserEmail);
         } else {
             window.location.href = 'login.html';
@@ -103,7 +103,7 @@
                 console.error('Lỗi kết nối khi đăng xuất:', error);
             } finally {
                 localStorage.removeItem('loggedInUserEmail');
-                localStorage.removeItem('loggedInUsername'); // Xóa cả username
+                localStorage.removeItem('loggedInUsername');
                 window.location.href = 'login.html';
             }
         });
