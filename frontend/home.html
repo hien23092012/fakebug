@@ -27,154 +27,183 @@
         </div>
         <div class="navbar-center">
             <a href="home.html" class="nav-icon active"><i class="fas fa-home"></i></a>
-            <a href="#" class="nav-icon"><i class="fas fa-user-friends"></i></a>
-            <a href="#" class="nav-icon"><i class="fas fa-tv"></i></a>
-            <a href="#" class="nav-icon"><i class="fas fa-store"></i></a>
-            <a href="#" class="nav-icon"><i class="fas fa-users"></i></a>
+            <a href="chat.html" class="nav-icon"><i class="fas fa-comments"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-bell"></i></a>
         </div>
         <div class="navbar-right">
-            <a href="#" class="nav-icon-circle"><i class="fas fa-th-large"></i></a>
-            <a href="chat.html" class="nav-icon-circle"><i class="fab fa-facebook-messenger"></i></a>
-            <a href="#" class="nav-icon-circle"><i class="fas fa-bell"></i></a>
-            <a href="profile.html" class="nav-icon-circle profile-avatar-small">
-                <img id="smallUserAvatar" src="https://via.placeholder.com/30" alt="Avatar">
-            </a>
-            <a href="#" class="nav-icon-circle"><i class="fas fa-caret-down"></i></a>
+            <div class="user-profile-nav">
+                <img src="https://via.placeholder.com/30" alt="Ảnh đại diện" class="small-avatar" id="smallUserAvatar">
+                <a href="profile.html" id="profileLink">Tên người dùng</a>
+            </div>
+            <button id="logoutBtn" class="logout-btn">Đăng xuất</button>
         </div>
     </header>
 
-    <div class="container">
-        <div class="header">
-            <h2>Chào mừng, <span id="displayUsername">Người dùng!</span></h2>
-            <button id="logoutButton" class="logout-btn">Đăng xuất</button>
-        </div>
+    <main class="container">
+        <section class="create-post">
+            <h2>Tạo bài đăng</h2>
+            <form id="createPostForm">
+                <textarea id="postContent" placeholder="Bạn đang nghĩ gì?" rows="3"></textarea>
+                <input type="file" id="postImage" accept="image/*">
+                <p id="postMessage" class="message"></p>
+                <button type="submit">Đăng bài</button>
+            </form>
+        </section>
 
-        <div class="post-form">
-            <h3>Tạo bài đăng mới</h3>
-            <textarea id="postContent" placeholder="Bạn đang nghĩ gì?" required></textarea>
-            <button id="createPostButton">Đăng bài</button>
-            <p id="postMessage" class="message"></p>
-        </div>
+        <section class="posts-feed" id="postsFeed">
+            </section>
+    </main>
 
-        <h3>Các bài đăng gần đây</h3>
-        <div id="postList" class="post-list">
-            <p id="loadingPosts">Đang tải bài đăng...</p>
-            <p id="noPosts" style="display:none;">Chưa có bài đăng nào.</p>
-        </div>
-    </div>
-
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-        const API_BASE_URL = 'http://localhost:3000/api';
+        // Sửa URL này thành URL Render của backend của bạn
+        const API_BASE_URL = 'http://localhost:3000'; // THAY ĐỔI DÒNG NÀY KHI TRIỂN KHAI
 
-        const displayUsernameElement = document.getElementById('displayUsername');
-        const logoutButton = document.getElementById('logoutButton');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const profileLink = document.getElementById('profileLink');
+        const createPostForm = document.getElementById('createPostForm');
         const postContentInput = document.getElementById('postContent');
-        const createPostButton = document.getElementById('createPostButton');
+        const postImageInput = document.getElementById('postImage');
         const postMessageElement = document.getElementById('postMessage');
-        const postListElement = document.getElementById('postList');
-        const loadingPostsElement = document.getElementById('loadingPosts');
-        const noPostsElement = document.getElementById('noPosts');
+        const postsFeed = document.getElementById('postsFeed');
         const smallUserAvatar = document.getElementById('smallUserAvatar');
 
         const loggedInUserEmail = localStorage.getItem('loggedInUserEmail');
         const loggedInUsername = localStorage.getItem('loggedInUsername');
 
-        if (loggedInUserEmail) {
-            displayUsernameElement.textContent = loggedInUsername || loggedInUserEmail;
-            fetchSmallAvatar(loggedInUserEmail);
-        } else {
+        if (!loggedInUserEmail) {
             window.location.href = 'login.html';
+        } else {
+            profileLink.textContent = loggedInUsername;
+            profileLink.href = `profile.html?email=${loggedInUserEmail}`;
+            fetchSmallAvatar(loggedInUserEmail); // Tải ảnh đại diện nhỏ khi vào trang
         }
 
-        // --- Hàm xử lý đăng xuất ---
-        logoutButton.addEventListener('click', async () => {
+        // Khởi tạo Socket.IO client
+        const socket = io(API_BASE_URL); // Kết nối đến server Socket.IO
+
+        socket.on('connect', () => {
+            console.log('Connected to Socket.IO server');
+            socket.emit('setUserId', loggedInUserEmail); // Gửi email người dùng để server định danh
+        });
+
+        socket.on('newPost', (post) => {
+            console.log('Received new post via Socket.IO:', post);
+            prependPostToFeed(post); // Thêm bài đăng mới lên đầu feed
+        });
+
+        logoutBtn.addEventListener('click', async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/logout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: loggedInUserEmail })
+                const response = await fetch(`${API_BASE_URL}/api/logout`, {
+                    method: 'POST'
                 });
                 if (response.ok) {
-                    console.log('Đăng xuất thành công ở server.');
+                    localStorage.removeItem('loggedInUserEmail');
+                    localStorage.removeItem('loggedInUsername');
+                    window.location.href = 'login.html';
                 } else {
-                    console.error('Lỗi khi đăng xuất ở server.');
+                    alert('Đăng xuất không thành công.');
                 }
             } catch (error) {
-                console.error('Lỗi kết nối khi đăng xuất:', error);
-            } finally {
-                localStorage.removeItem('loggedInUserEmail');
-                localStorage.removeItem('loggedInUsername');
-                window.location.href = 'login.html';
+                console.error('Lỗi khi đăng xuất:', error);
+                alert('Lỗi kết nối khi đăng xuất.');
             }
         });
 
-        // --- Hàm để định dạng timestamp thành ngày giờ đọc được ---
-        function formatTimestamp(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleString('vi-VN', {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
+        // Hàm hiển thị một bài đăng lên feed
+        function displayPost(post) {
+            const postElement = document.createElement('div');
+            postElement.classList.add('post');
+
+            const postHeader = document.createElement('div');
+            postHeader.classList.add('post-header');
+            postHeader.innerHTML = `
+                <img src="${post.author.avatar ? `${API_BASE_URL}${post.author.avatar}` : 'https://via.placeholder.com/40'}" alt="Ảnh đại diện" class="avatar">
+                <div class="post-info">
+                    <a href="profile.html?email=${post.author.email}" class="post-author">${post.author.username}</a>
+                    <span class="post-time">${new Date(post.createdAt).toLocaleString()}</span>
+                </div>
+            `;
+            postElement.appendChild(postHeader);
+
+            if (post.content) {
+                const postContent = document.createElement('p');
+                postContent.classList.add('post-content');
+                postContent.textContent = post.content;
+                postElement.appendChild(postContent);
+            }
+
+            if (post.imageUrl) {
+                const postImage = document.createElement('img');
+                postImage.classList.add('post-image');
+                postImage.src = `${API_BASE_URL}${post.imageUrl}`; // Sử dụng URL Render của backend
+                postImage.alt = 'Bài đăng ảnh';
+                postElement.appendChild(postImage);
+            }
+
+            const postActions = document.createElement('div');
+            postActions.classList.add('post-actions');
+            postActions.innerHTML = `
+                <span class="like-btn"><i class="far fa-thumbs-up"></i> Thích (${post.likes.length})</span>
+                <span class="comment-btn"><i class="far fa-comment"></i> Bình luận (${post.comments.length})</span>
+                <span class="share-btn"><i class="far fa-share-square"></i> Chia sẻ</span>
+            `;
+            postElement.appendChild(postActions);
+
+            return postElement;
         }
 
-        // --- Hàm để tải và hiển thị các bài đăng ---
+        // Hàm thêm bài đăng vào đầu feed
+        function prependPostToFeed(post) {
+            const newPostElement = displayPost(post);
+            postsFeed.prepend(newPostElement); // Thêm vào đầu danh sách
+        }
+
+        // Hàm tải và hiển thị tất cả bài đăng
         async function fetchAndDisplayPosts() {
-            postListElement.innerHTML = '';
-            loadingPostsElement.style.display = 'block';
-            noPostsElement.style.display = 'none';
-
             try {
-                const response = await fetch(`${API_BASE_URL}/posts`);
-                const posts = await response.json();
-
-                loadingPostsElement.style.display = 'none';
-
-                if (posts.length === 0) {
-                    noPostsElement.style.display = 'block';
-                } else {
-                    posts.forEach(post => {
-                        const postItem = document.createElement('div');
-                        postItem.classList.add('post-item');
-                        postItem.innerHTML = `
-                            <div class="post-author">${post.author_email}</div>
-                            <div class="post-content">${post.content}</div>
-                            <div class="post-time">${formatTimestamp(post.timestamp)}</div>
-                        `;
-                        postListElement.appendChild(postItem);
-                    });
+                const response = await fetch(`${API_BASE_URL}/api/posts`);
+                if (!response.ok) {
+                    throw new Error('Không thể tải bài đăng.');
                 }
+                const posts = await response.json();
+                postsFeed.innerHTML = ''; // Xóa các bài đăng cũ
+                posts.forEach(post => {
+                    postsFeed.appendChild(displayPost(post));
+                });
             } catch (error) {
                 console.error('Lỗi khi tải bài đăng:', error);
-                loadingPostsElement.textContent = 'Lỗi khi tải bài đăng. Vui lòng thử lại.';
-                loadingPostsElement.style.color = 'red';
+                const errorMessage = document.createElement('p');
+                errorMessage.textContent = `Không thể tải bài đăng: ${error.message}. Vui lòng thử lại sau.`;
+                errorMessage.style.color = 'red';
+                postsFeed.appendChild(errorMessage);
             }
         }
 
-        // --- Hàm xử lý tạo bài đăng mới ---
-        createPostButton.addEventListener('click', async () => {
+        createPostForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
             const content = postContentInput.value.trim();
-            if (!content) {
-                postMessageElement.textContent = "Nội dung bài đăng không được để trống!";
-                postMessageElement.style.color = 'red';
+            const imageFile = postImageInput.files[0];
+
+            if (!content && !imageFile) {
+                postMessageElement.textContent = 'Vui lòng nhập nội dung hoặc chọn ảnh.';
+                postMessageElement.style.color = 'orange';
                 return;
             }
 
-            const data = {
-                author_email: loggedInUserEmail,
-                content: content
-            };
+            const formData = new FormData();
+            formData.append('authorEmail', loggedInUserEmail);
+            formData.append('authorUsername', loggedInUsername);
+            formData.append('content', content);
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/posts`, {
+                const response = await fetch(`${API_BASE_URL}/api/posts`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data),
+                    body: formData,
                 });
 
                 const result = await response.json();
@@ -182,8 +211,9 @@
                 if (response.ok) {
                     postMessageElement.textContent = result.message;
                     postMessageElement.style.color = 'green';
-                    postContentInput.value = '';
-                    fetchAndDisplayPosts();
+                    postContentInput.value = ''; // Xóa nội dung sau khi đăng
+                    postImageInput.value = ''; // Xóa file đã chọn
+                    // Không cần fetch lại toàn bộ posts vì socket.io sẽ xử lý
                 } else {
                     postMessageElement.textContent = `Lỗi: ${result.message || 'Tạo bài đăng không thành công.'}`;
                     postMessageElement.style.color = 'red';
@@ -198,7 +228,7 @@
         // Hàm mới để chỉ tải ảnh đại diện nhỏ cho navbar
         async function fetchSmallAvatar(email) {
             try {
-                const response = await fetch(`${API_BASE_URL}/profile/${email}`);
+                const response = await fetch(`${API_BASE_URL}/api/profile/${email}`); // Sử dụng API_BASE_URL đã định nghĩa
                 if (!response.ok) {
                     throw new Error('Không thể tải profile.');
                 }
@@ -206,7 +236,8 @@
                 const profile = userData.profile;
 
                 if (smallUserAvatar) {
-                    smallUserAvatar.src = profile.avatar ? `http://localhost:3000${profile.avatar}` : 'https://via.placeholder.com/30';
+                    // Đảm bảo URL ảnh đúng khi hiển thị
+                    smallUserAvatar.src = profile.avatar ? `${API_BASE_URL}${profile.avatar}` : 'https://via.placeholder.com/30';
                 }
             } catch (error) {
                 console.error('Lỗi khi tải ảnh đại diện nhỏ:', error);
