@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang chủ - Facebook Clone</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Các style bổ sung chỉ dành riêng cho home.html nếu cần */
+        .container {
+            max-width: 700px;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-left">
+            <a href="home.html" class="logo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook Logo">
+            </a>
+            <div class="search-box">
+                <a href="search.html" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" placeholder="Tìm kiếm trên Facebook" readonly style="cursor: pointer;">
+                </a>
+            </div>
+        </div>
+        <div class="navbar-center">
+            <a href="home.html" class="nav-icon active"><i class="fas fa-home"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-user-friends"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-tv"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-store"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-users"></i></a>
+        </div>
+        <div class="navbar-right">
+            <a href="#" class="nav-icon-circle"><i class="fas fa-th-large"></i></a>
+            <a href="#" class="nav-icon-circle"><i class="fab fa-facebook-messenger"></i></a>
+            <a href="#" class="nav-icon-circle"><i class="fas fa-bell"></i></a>
+            <a href="profile.html" class="nav-icon-circle profile-avatar-small">
+                <img id="smallUserAvatar" src="https://via.placeholder.com/30" alt="Avatar">
+            </a>
+            <a href="#" class="nav-icon-circle"><i class="fas fa-caret-down"></i></a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="header">
+            <h2>Chào mừng, <span id="displayUsername">Người dùng!</span></h2> <button id="logoutButton" class="logout-btn">Đăng xuất</button>
+        </div>
+
+        <div class="post-form">
+            <h3>Tạo bài đăng mới</h3>
+            <textarea id="postContent" placeholder="Bạn đang nghĩ gì?" required></textarea>
+            <button id="createPostButton">Đăng bài</button>
+            <p id="postMessage" class="message"></p>
+        </div>
+
+        <h3>Các bài đăng gần đây</h3>
+        <div id="postList" class="post-list">
+            <p id="loadingPosts">Đang tải bài đăng...</p>
+            <p id="noPosts" style="display:none;">Chưa có bài đăng nào.</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+
+        const displayUsernameElement = document.getElementById('displayUsername'); // Lấy tham chiếu mới
+        const logoutButton = document.getElementById('logoutButton');
+        const postContentInput = document.getElementById('postContent');
+        const createPostButton = document.getElementById('createPostButton');
+        const postMessageElement = document.getElementById('postMessage');
+        const postListElement = document.getElementById('postList');
+        const loadingPostsElement = document.getElementById('loadingPosts');
+        const noPostsElement = document.getElementById('noPosts');
+        const smallUserAvatar = document.getElementById('smallUserAvatar');
+
+        const loggedInUserEmail = localStorage.getItem('loggedInUserEmail');
+        const loggedInUsername = localStorage.getItem('loggedInUsername'); // Lấy username từ localStorage
+
+        if (loggedInUserEmail) {
+            displayUsernameElement.textContent = loggedInUsername || loggedInUserEmail; // Hiển thị username
+            fetchSmallAvatar(loggedInUserEmail);
+        } else {
+            window.location.href = 'login.html';
+        }
+
+        // --- Hàm xử lý đăng xuất ---
+        logoutButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: loggedInUserEmail })
+                });
+                if (response.ok) {
+                    console.log('Đăng xuất thành công ở server.');
+                } else {
+                    console.error('Lỗi khi đăng xuất ở server.');
+                }
+            } catch (error) {
+                console.error('Lỗi kết nối khi đăng xuất:', error);
+            } finally {
+                localStorage.removeItem('loggedInUserEmail');
+                localStorage.removeItem('loggedInUsername'); // Xóa cả username
+                window.location.href = 'login.html';
+            }
+        });
+
+        // --- Hàm để định dạng timestamp thành ngày giờ đọc được ---
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('vi-VN', {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // --- Hàm để tải và hiển thị các bài đăng ---
+        async function fetchAndDisplayPosts() {
+            postListElement.innerHTML = '';
+            loadingPostsElement.style.display = 'block';
+            noPostsElement.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts`);
+                const posts = await response.json();
+
+                loadingPostsElement.style.display = 'none';
+
+                if (posts.length === 0) {
+                    noPostsElement.style.display = 'block';
+                } else {
+                    posts.forEach(post => {
+                        const postItem = document.createElement('div');
+                        postItem.classList.add('post-item');
+                        postItem.innerHTML = `
+                            <div class="post-author">${post.author_email}</div>
+                            <div class="post-content">${post.content}</div>
+                            <div class="post-time">${formatTimestamp(post.timestamp)}</div>
+                        `;
+                        postListElement.appendChild(postItem);
+                    });
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải bài đăng:', error);
+                loadingPostsElement.textContent = 'Lỗi khi tải bài đăng. Vui lòng thử lại.';
+                loadingPostsElement.style.color = 'red';
+            }
+        }
+
+        // --- Hàm xử lý tạo bài đăng mới ---
+        createPostButton.addEventListener('click', async () => {
+            const content = postContentInput.value.trim();
+            if (!content) {
+                postMessageElement.textContent = "Nội dung bài đăng không được để trống!";
+                postMessageElement.style.color = 'red';
+                return;
+            }
+
+            const data = {
+                author_email: loggedInUserEmail,
+                content: content
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    postMessageElement.textContent = result.message;
+                    postMessageElement.style.color = 'green';
+                    postContentInput.value = '';
+                    fetchAndDisplayPosts();
+                } else {
+                    postMessageElement.textContent = `Lỗi: ${result.message || 'Tạo bài đăng không thành công.'}`;
+                    postMessageElement.style.color = 'red';
+                }
+            } catch (error) {
+                postMessageElement.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                postMessageElement.style.color = 'red';
+                console.error('Lỗi khi gửi yêu cầu tạo bài đăng:', error);
+            }
+        });
+
+        // Hàm mới để chỉ tải ảnh đại diện nhỏ cho navbar
+        async function fetchSmallAvatar(email) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile/${email}`);
+                if (!response.ok) {
+                    throw new Error('Không thể tải profile.');
+                }
+                const userData = await response.json();
+                const profile = userData.profile;
+
+                if (smallUserAvatar) {
+                    smallUserAvatar.src = profile.avatar ? `http://localhost:3000${profile.avatar}` : 'https://via.placeholder.com/30';
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải ảnh đại diện nhỏ:', error);
+                if (smallUserAvatar) {
+                    smallUserAvatar.src = 'https://via.placeholder.com/30'; // fallback
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayPosts);
+    </script>
+</body>
+</html>

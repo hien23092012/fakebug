@@ -1,0 +1,599 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding-top: 56px; /* Chiều cao của navbar cố định */
+}
+
+.container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 700px; /* Tăng chiều rộng container cho trang chủ */
+    text-align: center;
+    margin: 20px auto; /* Căn giữa container với margin trên dưới */
+}
+
+h2 {
+    color: #1877f2;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #606770;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"] { /* Đã thêm input[type="text"] */
+    width: calc(100% - 22px);
+    padding: 10px;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+button {
+    background-color: #1877f2;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 18px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 10px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+button:hover {
+    background-color: #166fe5;
+}
+
+.message {
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+.message.error {
+    color: red;
+}
+
+.message.success {
+    color: green;
+}
+
+p {
+    margin-top: 20px;
+    color: #606770;
+}
+
+a {
+    color: #1877f2;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+
+/* Các style bổ sung cho trang chủ và bài đăng */
+.post-form, .profile-section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    text-align: left;
+}
+.post-form textarea, .profile-section input[type="text"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+    font-size: 16px;
+    min-height: 40px;
+    resize: vertical;
+    margin-bottom: 10px;
+}
+.post-form textarea {
+    min-height: 80px;
+}
+.post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.post-item {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+.post-author {
+    font-weight: bold;
+    color: #1877f2;
+    margin-bottom: 5px;
+}
+.post-content {
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+}
+.post-time {
+    font-size: 0.8em;
+    color: #606770;
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.header h2 {
+    margin: 0;
+    color: #1877f2;
+}
+.logout-btn {
+    background-color: #dc3545;
+    width: auto;
+    padding: 8px 15px;
+    font-size: 16px;
+    margin-top: 0;
+}
+.logout-btn:hover {
+    background-color: #c82333;
+}
+
+/* Styles cho Profile */
+.profile-header {
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+}
+.cover-photo {
+    width: 100%;
+    height: 200px;
+    background-color: #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: -75px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.cover-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.cover-photo-upload-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+.cover-photo:hover .cover-photo-upload-btn {
+    opacity: 1;
+}
+
+.avatar-container {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-color: #eee;
+    border: 5px solid #fff;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.avatar-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.avatar-upload-btn {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 5px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.9em;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+.avatar-container:hover .avatar-upload-btn {
+    opacity: 1;
+}
+
+.profile-details {
+    text-align: center;
+    margin-top: 10px;
+}
+.profile-details h3 {
+    margin-bottom: 5px;
+    color: #1877f2;
+}
+.profile-details p {
+    margin: 5px 0;
+    font-size: 0.95em;
+    color: #333;
+}
+.profile-details .status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #ccc;
+    margin-left: 5px;
+    vertical-align: middle;
+    transition: background-color 0.3s ease-in-out;
+}
+.profile-details .status-indicator.online {
+    background-color: #4CAF50;
+}
+.profile-details .status-indicator.busy {
+    background-color: #FFC107;
+}
+.profile-details .status-indicator.away {
+    background-color: #FF5722;
+}
+
+/* Profile edit form */
+.profile-edit-form label {
+    margin-top: 10px;
+}
+.profile-edit-form button {
+    margin-top: 20px;
+}
+
+.mood-selector {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.mood-selector button {
+    background-color: #6c757d;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: auto;
+    flex-grow: 1;
+    min-width: 100px;
+}
+.mood-selector button:hover {
+    background-color: #5a6268;
+}
+.mood-selector button.selected {
+    background-color: #1877f2;
+    box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.5);
+}
+
+/* Animation cho trạng thái online/offline */
+@keyframes pulse-online {
+    0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+.status-indicator.online {
+    animation: pulse-online 2s infinite;
+}
+.status-indicator.busy {
+    animation: none;
+}
+.status-indicator.away {
+    animation: none;
+}
+
+/* Modal cho form chỉnh sửa profile */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    justify-content: center;
+    align-items: center;
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 600px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    position: relative;
+    animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+
+/* --- Styles cho Navbar --- */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+    padding: 5px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    height: 56px;
+    box-sizing: border-box;
+}
+
+.navbar-left, .navbar-center, .navbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-left .logo img {
+    height: 40px;
+    margin-right: 10px;
+}
+
+.search-box {
+    position: relative;
+    background-color: #f0f2f5;
+    border-radius: 20px;
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+}
+
+.search-box .search-icon {
+    color: #606770;
+    margin-right: 5px;
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 15px;
+    padding: 0;
+    width: 200px;
+    /* MỚI: Thêm style cho input trong search-box khi nó là click-only */
+    cursor: pointer;
+}
+
+.navbar-center {
+    flex-grow: 1;
+    justify-content: center;
+    gap: 5px;
+}
+
+.nav-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 120px;
+    height: 48px;
+    color: #606770;
+    font-size: 24px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease-in-out;
+    text-decoration: none;
+}
+
+.nav-icon:hover {
+    background-color: #f0f2f5;
+}
+
+.nav-icon.active {
+    color: #1877f2;
+    border-bottom: 3px solid #1877f2;
+    background-color: transparent;
+    border-radius: 0;
+}
+
+.nav-icon.active:hover {
+    background-color: transparent;
+}
+
+.navbar-right {
+    gap: 10px;
+}
+
+.nav-icon-circle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    background-color: #e4e6eb;
+    border-radius: 50%;
+    color: #050505;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    text-decoration: none;
+}
+
+.nav-icon-circle:hover {
+    background-color: #d8d9db;
+}
+
+.profile-avatar-small {
+    padding: 0;
+    overflow: hidden;
+}
+
+.profile-avatar-small img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Search page button styles */
+.search-result-actions button {
+    width: auto;
+    padding: 8px 15px;
+    font-size: 14px;
+    margin-left: 10px;
+    margin-top: 0;
+}
+
+.add-friend-btn {
+    background-color: #1877f2;
+}
+.add-friend-btn:hover {
+    background-color: #166fe5;
+}
+
+.request-sent-btn, .friend-status-btn {
+    background-color: #606770;
+    cursor: default;
+}
+.request-sent-btn:hover, .friend-status-btn:hover {
+    background-color: #606770;
+}
+
+.accept-request-btn {
+    background-color: #4CAF50;
+}
+.accept-request-btn:hover {
+    background-color: #45a049;
+}
+
+/* Thêm style cho chấm trạng thái online nhỏ trong kết quả tìm kiếm */
+.status-indicator-small {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ccc;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+.status-indicator-small.online {
+    background-color: #4CAF50;
+}
+
+/* Styles riêng cho trang tìm kiếm */
+.search-page-container {
+    max-width: 700px;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.search-input-group {
+    display: flex;
+    margin-bottom: 20px;
+}
+.search-input-group input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #dddfe2;
+    border-radius: 6px 0 0 6px;
+    font-size: 16px;
+}
+.search-input-group button {
+    width: auto;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 15px;
+    margin-top: 0;
+}
+.search-results-list {
+    list-style: none;
+    padding: 0;
+}
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+.search-result-item:last-child {
+    border-bottom: none;
+}
+.search-result-item img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 15px;
+}
+.search-result-info {
+    flex-grow: 1;
+}
+.search-result-info .username {
+    font-weight: bold;
+    color: #1877f2;
+}
+.search-result-info .email {
+    font-size: 0.9em;
+    color: #606770;
+}
+.search-result-actions button {
+    width: auto;
+    padding: 8px 15px;
+    font-size: 14px;
+    margin-left: 10px;
+    margin-top: 0;
+}

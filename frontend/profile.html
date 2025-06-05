@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile của bạn - Facebook Clone</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Các style đặc trưng cho trang profile */
+        body {
+            padding-top: 56px; /* Giữ padding-top cho navbar */
+        }
+        .container {
+            max-width: 800px; /* Có thể làm profile rộng hơn một chút */
+        }
+
+        .profile-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .cover-photo {
+            width: 100%;
+            height: 200px;
+            background-color: #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: -75px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .cover-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cover-photo-upload-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .cover-photo:hover .cover-photo-upload-btn {
+            opacity: 1;
+        }
+
+        .avatar-container {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background-color: #eee;
+            border: 5px solid #fff;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .avatar-upload-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 5px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .avatar-container:hover .avatar-upload-btn {
+            opacity: 1;
+        }
+
+        .profile-details {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .profile-details h3 {
+            margin-bottom: 5px;
+            color: #1877f2;
+        }
+        .profile-details p {
+            margin: 5px 0;
+            font-size: 0.95em;
+            color: #333;
+        }
+        .profile-details .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ccc;
+            margin-left: 5px;
+            vertical-align: middle;
+            transition: background-color 0.3s ease-in-out;
+        }
+        .profile-details .status-indicator.online {
+            background-color: #4CAF50;
+        }
+        .profile-details .status-indicator.busy {
+            background-color: #FFC107;
+        }
+        .profile-details .status-indicator.away {
+            background-color: #FF5722;
+        }
+
+        /* Profile edit form */
+        .profile-edit-form label {
+            margin-top: 10px;
+        }
+        .profile-edit-form button {
+            margin-top: 20px;
+        }
+
+        .mood-selector {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        .mood-selector button {
+            background-color: #6c757d;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: auto;
+            flex-grow: 1;
+            min-width: 100px;
+        }
+        .mood-selector button:hover {
+            background-color: #5a6268;
+        }
+        .mood-selector button.selected {
+            background-color: #1877f2;
+            box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.5);
+        }
+
+        /* Animation cho trạng thái online/offline */
+        @keyframes pulse-online {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+        .status-indicator.online {
+            animation: pulse-online 2s infinite;
+        }
+
+        /* Modal cho form chỉnh sửa profile */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Style cho Navbar trên trang profile (giống home.html) */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fff;
+            padding: 5px 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            height: 56px;
+            box-sizing: border-box;
+        }
+        .navbar-left, .navbar-center, .navbar-right {
+            display: flex;
+            align-items: center;
+        }
+        .navbar-left .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+        .search-box {
+            position: relative;
+            background-color: #f0f2f5;
+            border-radius: 20px;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+        }
+        .search-box .search-icon {
+            color: #606770;
+            margin-right: 5px;
+        }
+        .search-box input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 15px;
+            padding: 0;
+            width: 200px;
+        }
+        .navbar-center {
+            flex-grow: 1;
+            justify-content: center;
+            gap: 5px;
+        }
+        .nav-icon {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 120px;
+            height: 48px;
+            color: #606770;
+            font-size: 24px;
+            border-radius: 8px;
+            transition: background-color 0.2s ease-in-out;
+            text-decoration: none;
+        }
+        .nav-icon:hover {
+            background-color: #f0f2f5;
+        }
+        .nav-icon.active {
+            color: #1877f2;
+            border-bottom: 3px solid #1877f2;
+            background-color: transparent;
+            border-radius: 0;
+        }
+        .nav-icon.active:hover {
+            background-color: transparent;
+        }
+        .navbar-right {
+            gap: 10px;
+        }
+        .nav-icon-circle {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 40px;
+            height: 40px;
+            background-color: #e4e6eb;
+            border-radius: 50%;
+            color: #050505;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            text-decoration: none;
+        }
+        .nav-icon-circle:hover {
+            background-color: #d8d9db;
+        }
+        .profile-avatar-small {
+            padding: 0;
+            overflow: hidden;
+        }
+        .profile-avatar-small img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-left">
+            <a href="home.html" class="logo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook Logo">
+            </a>
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" placeholder="Tìm kiếm trên Facebook">
+            </div>
+        </div>
+        <div class="navbar-center">
+            <a href="home.html" class="nav-icon"><i class="fas fa-home"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-user-friends"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-tv"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-store"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-users"></i></a>
+        </div>
+        <div class="navbar-right">
+            <a href="#" class="nav-icon-circle"><i class="fas fa-th-large"></i></a>
+            <a href="#" class="nav-icon-circle"><i class="fab fa-facebook-messenger"></i></a>
+            <a href="#" class="nav-icon-circle"><i class="fas fa-bell"></i></a>
+            <a href="profile.html" class="nav-icon-circle profile-avatar-small">
+                <img id="smallUserAvatar" src="https://via.placeholder.com/30" alt="Avatar">
+            </a>
+            <a href="#" class="nav-icon-circle"><i class="fas fa-caret-down"></i></a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="header">
+            <h2>Profile của <span id="userEmail">Người dùng!</span></h2>
+            <button id="logoutButton" class="logout-btn">Đăng xuất</button>
+        </div>
+
+        <div class="profile-section">
+            <div class="profile-header">
+                <div class="cover-photo" id="coverPhotoContainer">
+                    <img id="displayCoverPhoto" src="" alt="Ảnh nền">
+                    <label for="coverPhotoUpload" class="cover-photo-upload-btn">
+                        <input type="file" id="coverPhotoUpload" accept="image/*" style="display:none;">
+                        Cập nhật ảnh nền
+                    </label>
+                </div>
+                <div class="avatar-container" id="avatarContainer">
+                    <img id="displayAvatar" src="" alt="Ảnh đại diện">
+                    <label for="avatarUpload" class="avatar-upload-btn">
+                        <input type="file" id="avatarUpload" accept="image/*" style="display:none;">
+                        📸
+                    </label>
+                </div>
+                <div class="profile-details">
+                    <h3 id="profileDisplayName"></h3>
+                    <p>Trạng thái: <span id="profileStatus"></span></p>
+                    <p>Cảm xúc: <span id="profileMood"></span></p>
+                    <p>
+                        Online: <span id="profileOnlineStatus"></span>
+                        <span class="status-indicator" id="onlineIndicator"></span>
+                    </p>
+                    <button id="editProfileButton">Chỉnh sửa Profile</button>
+                </div>
+            </div>
+        </div>
+
+        </div>
+
+    <div id="profileEditModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Chỉnh sửa Profile</h2>
+            <form id="editProfileForm">
+                <div class="form-group">
+                    <label for="editStatus">Trạng thái:</label>
+                    <input type="text" id="editStatus" placeholder="Bạn đang làm gì?">
+                </div>
+                <div class="form-group">
+                    <label>Cảm xúc:</label>
+                    <div class="mood-selector">
+                        <button type="button" data-mood="Vui vẻ">😊 Vui vẻ</button>
+                        <button type="button" data-mood="Buồn">😞 Buồn</button>
+                        <button type="button" data-mood="Phấn khởi">🥳 Phấn khởi</button>
+                        <button type="button" data-mood="Mệt mỏi">😴 Mệt mỏi</button>
+                        <button type="button" data-mood="Bình thường">😐 Bình thường</button>
+                    </div>
+                    <input type="hidden" id="editMood" name="mood">
+                </div>
+                <div class="form-group">
+                    <label for="editOnlineStatus">Trạng thái Online:</label>
+                    <select id="editOnlineStatus">
+                        <option value="online">Online</option>
+                        <option value="busy">Bận</option>
+                        <option value="away">Đi vắng</option>
+                        <option value="offline">Offline</option>
+                    </select>
+                </div>
+                <button type="submit">Lưu thay đổi</button>
+                <p id="editProfileMessage" class="message"></p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+
+        const userEmailElement = document.getElementById('userEmail');
+        const logoutButton = document.getElementById('logoutButton');
+        const smallUserAvatar = document.getElementById('smallUserAvatar'); // Ảnh đại diện nhỏ trên navbar
+
+        // Profile elements (đã di chuyển sang đây)
+        const profileDisplayName = document.getElementById('profileDisplayName');
+        const profileStatus = document.getElementById('profileStatus');
+        const profileMood = document.getElementById('profileMood');
+        const profileOnlineStatus = document.getElementById('profileOnlineStatus');
+        const onlineIndicator = document.getElementById('onlineIndicator');
+        const displayAvatar = document.getElementById('displayAvatar');
+        const displayCoverPhoto = document.getElementById('displayCoverPhoto');
+        const editProfileButton = document.getElementById('editProfileButton');
+
+        // Modal elements (đã di chuyển sang đây)
+        const profileEditModal = document.getElementById('profileEditModal');
+        const closeModalButton = profileEditModal.querySelector('.close-button');
+        const editProfileForm = document.getElementById('editProfileForm');
+        const editStatusInput = document.getElementById('editStatus');
+        const editMoodInput = document.getElementById('editMood');
+        const moodSelectorButtons = document.querySelectorAll('.mood-selector button');
+        const editOnlineStatusSelect = document.getElementById('editOnlineStatus');
+        const editProfileMessage = document.getElementById('editProfileMessage');
+
+        // Upload elements (đã di chuyển sang đây)
+        const avatarUploadInput = document.getElementById('avatarUpload');
+        const coverPhotoUploadInput = document.getElementById('coverPhotoUpload');
+
+
+        const loggedInUserEmail = localStorage.getItem('loggedInUserEmail');
+        if (loggedInUserEmail) {
+            userEmailElement.textContent = loggedInUserEmail;
+            profileDisplayName.textContent = loggedInUserEmail;
+            fetchUserProfile(loggedInUserEmail); // Tải thông tin profile khi trang tải
+        } else {
+            window.location.href = 'login.html'; // Nếu chưa đăng nhập thì chuyển về trang đăng nhập
+        }
+
+        // --- Hàm xử lý đăng xuất ---
+        logoutButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/logout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: loggedInUserEmail })
+                });
+                if (response.ok) {
+                    console.log('Đăng xuất thành công ở server.');
+                } else {
+                    console.error('Lỗi khi đăng xuất ở server.');
+                }
+            } catch (error) {
+                console.error('Lỗi kết nối khi đăng xuất:', error);
+            } finally {
+                localStorage.removeItem('loggedInUserEmail');
+                window.location.href = 'login.html';
+            }
+        });
+
+        // --- Chức năng Profile ---
+
+        // Hàm tải thông tin profile và hiển thị
+        async function fetchUserProfile(email) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile/${email}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Không thể tải profile.');
+                }
+                const userData = await response.json();
+                const profile = userData.profile;
+
+                profileStatus.textContent = profile.status || 'Chưa cập nhật';
+                profileMood.textContent = profile.mood || 'Chưa cập nhật';
+
+                let onlineText = '';
+                onlineIndicator.className = 'status-indicator';
+                if (profile.isOnline) {
+                    onlineText = 'Online';
+                    if (profile.status && profile.status.toLowerCase() === 'bận') {
+                        onlineIndicator.classList.add('busy');
+                        onlineText = 'Bận';
+                    } else if (profile.status && profile.status.toLowerCase() === 'đi vắng') {
+                        onlineIndicator.classList.add('away');
+                        onlineText = 'Đi vắng';
+                    } else {
+                        onlineIndicator.classList.add('online');
+                    }
+                } else {
+                    onlineText = 'Offline';
+                }
+                profileOnlineStatus.textContent = onlineText;
+
+                // Hiển thị ảnh đại diện và ảnh nền cho phần profile chính
+                displayAvatar.src = profile.avatar ? `http://localhost:3000${profile.avatar}` : 'https://via.placeholder.com/150';
+                displayCoverPhoto.src = profile.coverPhoto ? `http://localhost:3000${profile.coverPhoto}` : 'https://via.placeholder.com/600x200';
+                
+                // Cập nhật ảnh đại diện nhỏ trên navbar
+                if (smallUserAvatar) {
+                    smallUserAvatar.src = profile.avatar ? `http://localhost:3000${profile.avatar}` : 'https://via.placeholder.com/30';
+                }
+
+            } catch (error) {
+                console.error('Lỗi khi tải profile:', error);
+                // Xử lý lỗi hiển thị nếu cần
+            }
+        }
+
+        // Mở modal chỉnh sửa profile
+        editProfileButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile/${loggedInUserEmail}`);
+                const userData = await response.json();
+                const profile = userData.profile;
+
+                editStatusInput.value = profile.status || '';
+                editMoodInput.value = profile.mood || '';
+                selectMoodButton(profile.mood);
+                
+                if (profile.isOnline) {
+                    if (profile.status && profile.status.toLowerCase() === 'bận') {
+                        editOnlineStatusSelect.value = 'busy';
+                    } else if (profile.status && profile.status.toLowerCase() === 'đi vắng') {
+                        editOnlineStatusSelect.value = 'away';
+                    } else {
+                        editOnlineStatusSelect.value = 'online';
+                    }
+                } else {
+                    editOnlineStatusSelect.value = 'offline';
+                }
+
+                profileEditModal.style.display = 'flex';
+            } catch (error) {
+                console.error('Lỗi khi tải dữ liệu profile để chỉnh sửa:', error);
+                editProfileMessage.textContent = 'Lỗi khi tải dữ liệu profile.';
+                editProfileMessage.style.color = 'red';
+            }
+        });
+
+        // Đóng modal chỉnh sửa profile
+        closeModalButton.addEventListener('click', () => {
+            profileEditModal.style.display = 'none';
+            editProfileMessage.textContent = '';
+        });
+
+        // Xử lý khi click bên ngoài modal để đóng
+        window.addEventListener('click', (event) => {
+            if (event.target == profileEditModal) {
+                profileEditModal.style.display = 'none';
+                editProfileMessage.textContent = '';
+            }
+        });
+
+        // Xử lý chọn cảm xúc
+        moodSelectorButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                selectMoodButton(button.dataset.mood);
+            });
+        });
+
+        function selectMoodButton(mood) {
+            moodSelectorButtons.forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            const selectedButton = document.querySelector(`.mood-selector button[data-mood="${mood}"]`);
+            if (selectedButton) {
+                selectedButton.classList.add('selected');
+                editMoodInput.value = mood;
+            } else {
+                editMoodInput.value = '';
+            }
+        }
+
+        // Xử lý submit form chỉnh sửa profile
+        editProfileForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const status = editStatusInput.value.trim();
+            const mood = editMoodInput.value;
+            const onlineStatusValue = editOnlineStatusSelect.value;
+
+            let isOnline = false;
+            let actualStatus = status;
+            if (onlineStatusValue === 'online') {
+                isOnline = true;
+            } else if (onlineStatusValue === 'busy') {
+                isOnline = true;
+                actualStatus = 'Bận';
+            } else if (onlineStatusValue === 'away') {
+                isOnline = true;
+                actualStatus = 'Đi vắng';
+            } else if (onlineStatusValue === 'offline') {
+                isOnline = false;
+            }
+
+            const data = {
+                status: actualStatus,
+                mood: mood,
+                isOnline: isOnline
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile/${loggedInUserEmail}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    editProfileMessage.textContent = result.message;
+                    editProfileMessage.style.color = 'green';
+                    fetchUserProfile(loggedInUserEmail); // Tải lại profile để cập nhật hiển thị
+                    setTimeout(() => {
+                        profileEditModal.style.display = 'none';
+                        editProfileMessage.textContent = '';
+                    }, 1500);
+                } else {
+                    editProfileMessage.textContent = `Lỗi: ${result.message || 'Cập nhật profile không thành công.'}`;
+                    editProfileMessage.style.color = 'red';
+                }
+            } catch (error) {
+                editProfileMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                editProfileMessage.style.color = 'red';
+                console.error('Lỗi khi cập nhật profile:', error);
+            }
+        });
+
+        // Xử lý tải lên ảnh đại diện
+        avatarUploadInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile/${loggedInUserEmail}/avatar`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    displayAvatar.src = `http://localhost:3000${result.avatarUrl}`;
+                    if (smallUserAvatar) {
+                        smallUserAvatar.src = `http://localhost:3000${result.avatarUrl}`;
+                    }
+                    alert('Cập nhật ảnh đại diện thành công!');
+                } else {
+                    alert(`Lỗi khi cập nhật ảnh đại diện: ${result.message || 'Không thành công.'}`);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối khi tải ảnh đại diện.');
+                console.error('Lỗi khi tải ảnh đại diện:', error);
+            }
+        });
+
+        // Xử lý tải lên ảnh nền
+        coverPhotoUploadInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('coverPhoto', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile/${loggedInUserEmail}/cover-photo`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    displayCoverPhoto.src = `http://localhost:3000${result.coverPhotoUrl}`;
+                    alert('Cập nhật ảnh nền thành công!');
+                } else {
+                    alert(`Lỗi khi cập nhật ảnh nền: ${result.message || 'Không thành công.'}`);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối khi tải ảnh nền.');
+                console.error('Lỗi khi tải ảnh nền:', error);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Chỉ tải profile khi trang profile được tải
+            if (loggedInUserEmail) {
+                fetchUserProfile(loggedInUserEmail);
+            }
+        });
+    </script>
+</body>
+</html>

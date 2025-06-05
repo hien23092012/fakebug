@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tìm kiếm bạn bè - Facebook Clone</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Các style đặc trưng cho trang tìm kiếm đã được chuyển vào style.css */
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-left">
+            <a href="home.html" class="logo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="Facebook Logo">
+            </a>
+            <div class="search-box">
+                <a href="search.html" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" placeholder="Tìm kiếm trên Facebook" readonly style="cursor: pointer;">
+                </a>
+            </div>
+        </div>
+        <div class="navbar-center">
+            <a href="home.html" class="nav-icon"><i class="fas fa-home"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-user-friends"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-tv"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-store"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-users"></i></a>
+        </div>
+        <div class="navbar-right">
+            <a href="#" class="nav-icon-circle"><i class="fas fa-th-large"></i></a>
+            <a href="#" class="nav-icon-circle"><i class="fab fa-facebook-messenger"></i></a>
+            <a href="#" class="nav-icon-circle"><i class="fas fa-bell"></i></a>
+            <a href="profile.html" class="nav-icon-circle profile-avatar-small">
+                <img id="smallUserAvatar" src="https://via.placeholder.com/30" alt="Avatar">
+            </a>
+            <a href="#" class="nav-icon-circle"><i class="fas fa-caret-down"></i></a>
+        </div>
+    </header>
+
+    <div class="search-page-container">
+        <h2>Tìm kiếm bạn bè</h2>
+        <div class="search-input-group">
+            <input type="text" id="searchInput" placeholder="Nhập tên đăng nhập hoặc email...">
+            <button id="searchButton">Tìm kiếm</button>
+        </div>
+        <p id="searchMessage" class="message"></p>
+        <ul id="searchResultsList" class="search-results-list">
+            </ul>
+        <p id="noResults" style="display:none; text-align: center; color: #606770;">Không tìm thấy người dùng nào.</p>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000/api';
+
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const searchMessage = document.getElementById('searchMessage');
+        const searchResultsList = document.getElementById('searchResultsList');
+        const noResultsElement = document.getElementById('noResults');
+        const smallUserAvatar = document.getElementById('smallUserAvatar');
+        
+        const loggedInUserEmail = localStorage.getItem('loggedInUserEmail');
+        const loggedInUsername = localStorage.getItem('loggedInUsername');
+
+        if (!loggedInUserEmail) {
+            window.location.href = 'login.html';
+        } else {
+            fetchSmallAvatar(loggedInUserEmail);
+        }
+
+        async function fetchSmallAvatar(email) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile/${email}`);
+                if (!response.ok) {
+                    throw new Error('Không thể tải profile.');
+                }
+                const userData = await response.json();
+                const profile = userData.profile;
+
+                if (smallUserAvatar) {
+                    smallUserAvatar.src = profile.avatar ? `http://localhost:3000${profile.avatar}` : 'https://via.placeholder.com/30';
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải ảnh đại diện nhỏ:', error);
+                if (smallUserAvatar) {
+                    smallUserAvatar.src = 'https://via.placeholder.com/30';
+                }
+            }
+        }
+
+        searchButton.addEventListener('click', performSearch);
+        searchInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        async function performSearch() {
+            const query = searchInput.value.trim();
+            if (!query) {
+                searchMessage.textContent = 'Vui lòng nhập từ khóa tìm kiếm.';
+                searchMessage.style.color = 'red';
+                searchResultsList.innerHTML = '';
+                noResultsElement.style.display = 'none';
+                return;
+            }
+
+            searchMessage.textContent = 'Đang tìm kiếm...';
+            searchMessage.style.color = 'blue';
+            searchResultsList.innerHTML = '';
+            noResultsElement.style.display = 'none';
+
+            let loggedInUser = null;
+            try {
+                const userResponse = await fetch(`${API_BASE_URL}/profile/${loggedInUserEmail}`);
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    loggedInUser = userData;
+                }
+            } catch (err) {
+                console.error('Lỗi khi tải profile người dùng hiện tại:', err);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/search?q=${encodeURIComponent(query)}`);
+                const users = await response.json();
+
+                if (response.ok) {
+                    searchMessage.textContent = '';
+                    if (users.length === 0) {
+                        noResultsElement.style.display = 'block';
+                    } else {
+                        users.forEach(user => {
+                            if (user.email === loggedInUserEmail) {
+                                return;
+                            }
+
+                            let buttonText = 'Kết bạn';
+                            let buttonClass = 'add-friend-btn';
+                            let buttonAction = 'send-request';
+
+                            if (loggedInUser) {
+                                if (loggedInUser.friends.includes(user.email)) {
+                                    buttonText = 'Bạn bè';
+                                    buttonClass = 'friend-status-btn';
+                                    buttonAction = 'unfriend';
+                                } else if (loggedInUser.friendRequestsSent.includes(user.email)) {
+                                    buttonText = 'Đã gửi yêu cầu';
+                                    buttonClass = 'request-sent-btn';
+                                    buttonAction = 'cancel-request';
+                                } else if (loggedInUser.friendRequestsReceived.includes(user.email)) {
+                                    buttonText = 'Chấp nhận';
+                                    buttonClass = 'accept-request-btn';
+                                    buttonAction = 'accept-request';
+                                }
+                            }
+
+                            const listItem = document.createElement('li');
+                            listItem.classList.add('search-result-item');
+                            listItem.innerHTML = `
+                                <img src="${user.avatar ? `http://localhost:3000${user.avatar}` : 'https://via.placeholder.com/50'}" alt="Avatar">
+                                <div class="search-result-info">
+                                    <div class="username">${user.username}</div>
+                                    <div class="email">${user.email}</div>
+                                    <div class="status-indicator-small ${user.isOnline ? 'online' : ''}"></div>
+                                </div>
+                                <div class="search-result-actions">
+                                    <button class="${buttonClass}" data-email="${user.email}" data-action="${buttonAction}">${buttonText}</button>
+                                </div>
+                            `;
+                            searchResultsList.appendChild(listItem);
+                        });
+                        attachFriendshipEventListeners();
+                    }
+                } else {
+                    searchMessage.textContent = `Lỗi: ${users.message || 'Tìm kiếm không thành công.'}`;
+                    searchMessage.style.color = 'red';
+                }
+            } catch (error) {
+                searchMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                searchMessage.style.color = 'red';
+                console.error('Lỗi khi tìm kiếm:', error);
+            }
+        }
+
+        function attachFriendshipEventListeners() {
+            document.querySelectorAll('.search-result-actions button').forEach(button => {
+                button.removeEventListener('click', handleFriendshipAction);
+                button.addEventListener('click', handleFriendshipAction);
+            });
+        }
+
+        async function handleFriendshipAction(event) {
+            const button = event.target;
+            const targetEmail = button.dataset.email;
+            const action = button.dataset.action;
+
+            if (!targetEmail) return;
+
+            let apiUrl = '';
+            let requestBody = {};
+            let successMessage = '';
+            let newButtonText = '';
+            let newButtonClass = '';
+            let newButtonAction = '';
+
+            if (action === 'send-request') {
+                apiUrl = `${API_BASE_URL}/friend-request/send`;
+                requestBody = { senderEmail: loggedInUserEmail, receiverEmail: targetEmail };
+                successMessage = 'Yêu cầu đã được gửi!';
+                newButtonText = 'Đã gửi yêu cầu';
+                newButtonClass = 'request-sent-btn';
+                newButtonAction = 'cancel-request';
+            } else if (action === 'accept-request') {
+                apiUrl = `${API_BASE_URL}/friend-request/accept`;
+                requestBody = { receiverEmail: loggedInUserEmail, senderEmail: targetEmail };
+                successMessage = 'Đã chấp nhận yêu cầu kết bạn!';
+                newButtonText = 'Bạn bè';
+                newButtonClass = 'friend-status-btn';
+                newButtonAction = 'unfriend';
+            } else if (action === 'cancel-request') {
+                apiUrl = `${API_BASE_URL}/friend-request/cancel-reject-unfriend`;
+                requestBody = { userEmail: loggedInUserEmail, targetEmail: targetEmail, type: 'cancel' };
+                successMessage = 'Đã hủy yêu cầu.';
+                newButtonText = 'Kết bạn';
+                newButtonClass = 'add-friend-btn';
+                newButtonAction = 'send-request';
+            } else if (action === 'unfriend') {
+                 apiUrl = `${API_BASE_URL}/friend-request/cancel-reject-unfriend`;
+                 requestBody = { userEmail: loggedInUserEmail, targetEmail: targetEmail, type: 'unfriend' };
+                 successMessage = 'Đã hủy kết bạn.';
+                 newButtonText = 'Kết bạn';
+                 newButtonClass = 'add-friend-btn';
+                 newButtonAction = 'send-request';
+            } else {
+                console.warn('Hành động không xác định:', action);
+                return;
+            }
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(successMessage);
+                    button.textContent = newButtonText;
+                    button.className = newButtonClass;
+                    button.dataset.action = newButtonAction;
+                } else {
+                    alert(`Lỗi: ${result.message || 'Thao tác không thành công.'}`);
+                }
+            } catch (error) {
+                alert(`Lỗi kết nối: ${error.message}. Vui lòng thử lại.`);
+                console.error('Lỗi khi thực hiện hành động kết bạn:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+node_app/node_modules/
+node_app/users.json
+node_app/posts.json
+node_app/messages.json
+node_app/uploads/
+.DS_Store
+*.env

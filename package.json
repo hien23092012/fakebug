@@ -1,0 +1,17 @@
+{
+  "name": "facebook_clone_root",
+  "version": "1.0.0",
+  "description": "Root package for Facebook Clone project",
+  "main": "index.js",
+  "scripts": {
+    "start:node": "cd node_app && node server.js",
+    "start:python": "cd python_app && .\\venv\\Scripts\\Activate.ps1 && flask run --port 5000",
+    "dev": "concurrently \"npm run start:node\" \"npm run start:python\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^8.2.2" 
+  }
+}

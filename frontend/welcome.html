@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chào mừng - Facebook Clone</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Chào mừng, <span id="userEmail">Người dùng!</span></h2>
+        <p>Bạn đã đăng nhập thành công vào hệ thống Facebook Clone.</p>
+        <button id="logoutButton">Đăng xuất</button>
+    </div>
+
+    <script>
+        const userEmailElement = document.getElementById('userEmail');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // Lấy email của người dùng từ LocalStorage
+        const loggedInUserEmail = localStorage.getItem('loggedInUserEmail');
+        if (loggedInUserEmail) {
+            userEmailElement.textContent = loggedInUserEmail;
+        } else {
+            // Nếu không có email, có thể chuyển hướng về trang đăng nhập
+            window.location.href = 'login.html';
+        }
+
+        // Xử lý đăng xuất
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('loggedInUserEmail'); // Xóa email khỏi LocalStorage
+            window.location.href = 'login.html'; // Chuyển hướng về trang đăng nhập
+        });
+    </script>
+</body>
+</html>
