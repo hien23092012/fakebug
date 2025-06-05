@@ -8,7 +8,7 @@ const path = require('path'); // Import thư viện path
 
 // Khởi tạo ứng dụng Express
 const app = express();
-const PORT = 3000; // Cổng mà ứng dụng Node.js sẽ lắng nghe
+const PORT = process.env.PORT || 3000; 
 
 // Đường dẫn đến file "database"
 const USERS_FILE = path.join(__dirname, 'users.json');
