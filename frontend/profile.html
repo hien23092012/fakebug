@@ -3,17 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile của bạn - Facebook Clone</title>
+    <title>Trang cá nhân - Facebook Clone</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            padding-top: 56px;
-        }
-        .container {
-            max-width: 800px;
-        }
-    </style>
 </head>
 <body>
     <header class="navbar">
@@ -30,324 +22,351 @@
         </div>
         <div class="navbar-center">
             <a href="home.html" class="nav-icon"><i class="fas fa-home"></i></a>
-            <a href="#" class="nav-icon"><i class="fas fa-user-friends"></i></a>
-            <a href="#" class="nav-icon"><i class="fas fa-tv"></i></a>
-            <a href="#" class="nav-icon"><i class="fas fa-store"></i></a>
-            <a href="#" class="nav-icon"><i class="fas fa-users"></i></a>
+            <a href="chat.html" class="nav-icon"><i class="fas fa-comments"></i></a>
+            <a href="#" class="nav-icon"><i class="fas fa-bell"></i></a>
         </div>
         <div class="navbar-right">
-            <a href="#" class="nav-icon-circle"><i class="fas fa-th-large"></i></a>
-            <a href="chat.html" class="nav-icon-circle"><i class="fab fa-facebook-messenger"></i></a>
-            <a href="#" class="nav-icon-circle"><i class="fas fa-bell"></i></a>
-            <a href="profile.html" class="nav-icon-circle active profile-avatar-small">
-                <img id="smallUserAvatar" src="https://via.placeholder.com/30" alt="Avatar">
-            </a>
-            <a href="#" class="nav-icon-circle"><i class="fas fa-caret-down"></i></a>
+            <div class="user-profile-nav">
+                <img src="https://via.placeholder.com/30" alt="Ảnh đại diện" class="small-avatar" id="smallUserAvatar">
+                <a href="profile.html" id="profileLink">Tên người dùng</a>
+            </div>
+            <button id="logoutBtn" class="logout-btn">Đăng xuất</button>
         </div>
     </header>
 
-    <div class="container">
-        <div class="header">
-            <h2>Profile của <span id="displayUsername">Người dùng!</span></h2>
-            <button id="logoutButton" class="logout-btn">Đăng xuất</button>
-        </div>
-
-        <div class="profile-section">
-            <div class="profile-header">
-                <div class="cover-photo" id="coverPhotoContainer">
-                    <img id="displayCoverPhoto" src="" alt="Ảnh nền">
-                    <label for="coverPhotoUpload" class="cover-photo-upload-btn">
-                        <input type="file" id="coverPhotoUpload" accept="image/*" style="display:none;">
-                        Cập nhật ảnh nền
-                    </label>
-                </div>
-                <div class="avatar-container" id="avatarContainer">
-                    <img id="displayAvatar" src="" alt="Ảnh đại diện">
-                    <label for="avatarUpload" class="avatar-upload-btn">
-                        <input type="file" id="avatarUpload" accept="image/*" style="display:none;">
-                        📸
-                    </label>
-                </div>
-                <div class="profile-details">
-                    <h3 id="profileDisplayName"></h3>
-                    <p>Trạng thái: <span id="profileStatus"></span></p>
-                    <p>Cảm xúc: <span id="profileMood"></span></p>
-                    <p>
-                        Online: <span id="profileOnlineStatus"></span>
-                        <span class="status-indicator" id="onlineIndicator"></span>
-                    </p>
-                    <button id="editProfileButton">Chỉnh sửa Profile</button>
-                </div>
+    <main class="profile-container">
+        <section class="profile-header-section">
+            <div class="cover-photo-container">
+                <img src="https://via.placeholder.com/850x315" alt="Ảnh nền" class="cover-photo" id="coverPhoto">
+                <button class="edit-cover-btn" id="editCoverBtn"><i class="fas fa-camera"></i> Chỉnh sửa ảnh nền</button>
+                <input type="file" id="coverPhotoUpload" accept="image/*" style="display: none;">
             </div>
-        </div>
-    </div>
+            <div class="profile-info-top">
+                <div class="avatar-container">
+                    <img src="https://via.placeholder.com/150" alt="Ảnh đại diện" class="profile-avatar" id="profileAvatar">
+                    <button class="edit-avatar-btn" id="editAvatarBtn"><i class="fas fa-camera"></i></button>
+                    <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                </div>
+                <h1 id="profileUsername">Tên người dùng</h1>
+                <p id="profileEmail" class="profile-email"></p>
+                <button class="action-button primary" id="addFriendBtn" style="display:none;"><i class="fas fa-user-plus"></i> Thêm bạn bè</button>
+                <button class="action-button primary" id="acceptFriendBtn" style="display:none;"><i class="fas fa-user-check"></i> Chấp nhận</button>
+                <button class="action-button" id="rejectFriendBtn" style="display:none;"><i class="fas fa-user-times"></i> Từ chối</button>
+                <button class="action-button primary" id="unfriendBtn" style="display:none;"><i class="fas fa-user-minus"></i> Hủy kết bạn</button>
+                <button class="action-button primary" id="sendMessageBtn" style="display:none;"><i class="fas fa-comment-dots"></i> Nhắn tin</button>
+            </div>
+        </section>
 
-    <div id="profileEditModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Chỉnh sửa Profile</h2>
-            <form id="editProfileForm">
-                <div class="form-group">
-                    <label for="editStatus">Trạng thái:</label>
-                    <input type="text" id="editStatus" placeholder="Bạn đang làm gì?">
-                </div>
-                <div class="form-group">
-                    <label>Cảm xúc:</label>
-                    <div class="mood-selector">
-                        <button type="button" data-mood="Vui vẻ">😊 Vui vẻ</button>
-                        <button type="button" data-mood="Buồn">😞 Buồn</button>
-                        <button type="button" data-mood="Phấn khởi">🥳 Phấn khởi</button>
-                        <button type="button" data-mood="Mệt mỏi">😴 Mệt mỏi</button>
-                        <button type="button" data-mood="Bình thường">😐 Bình thường</button>
-                    </div>
-                    <input type="hidden" id="editMood" name="mood">
-                </div>
-                <div class="form-group">
-                    <label for="editOnlineStatus">Trạng thái Online:</label>
-                    <select id="editOnlineStatus">
-                        <option value="online">Online</option>
-                        <option value="busy">Bận</option>
-                        <option value="away">Đi vắng</option>
-                        <option value="offline">Offline</option>
-                    </select>
-                </div>
-                <button type="submit">Lưu thay đổi</button>
-                <p id="editProfileMessage" class="message"></p>
-            </form>
-        </div>
-    </div>
+        <section class="profile-details-section">
+            <h2>Giới thiệu</h2>
+            <div class="editable-field">
+                <label>Tiểu sử:</label>
+                <p id="bioText" contenteditable="false">Chưa có tiểu sử.</p>
+                <input type="text" id="bioInput" style="display: none;">
+            </div>
+            <div class="editable-field">
+                <label>Địa điểm:</label>
+                <p id="locationText" contenteditable="false">Chưa có địa điểm.</p>
+                <input type="text" id="locationInput" style="display: none;">
+            </div>
+            <div class="editable-field">
+                <label>Ngày sinh:</label>
+                <p id="dobText" contenteditable="false">Chưa có ngày sinh.</p>
+                <input type="date" id="dobInput" style="display: none;">
+            </div>
+            <div class="editable-field">
+                <label>Giới tính:</label>
+                <p id="genderText" contenteditable="false">Chưa có giới tính.</p>
+                <select id="genderSelect" style="display: none;">
+                    <option value="">Chọn giới tính</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
+                </select>
+            </div>
+            <div class="editable-field">
+                <label>Tình trạng mối quan hệ:</label>
+                <p id="relationshipText" contenteditable="false">Chưa có tình trạng.</p>
+                <input type="text" id="relationshipInput" style="display: none;">
+            </div>
+            <button id="editProfileBtn" class="action-button primary">Chỉnh sửa Profile</button>
+            <button id="saveProfileBtn" class="action-button primary" style="display: none;">Lưu Profile</button>
+            <p id="profileMessage" class="message"></p>
+        </section>
+
+        <section class="friends-list-section">
+            <h2>Bạn bè (<span id="friendsCount">0</span>)</h2>
+            <ul id="friendsList">
+                </ul>
+        </section>
+    </main>
 
     <script>
-        const API_BASE_URL = 'http://localhost:3000/api';
+        // Sửa URL này thành URL Render của backend của bạn
+        const API_BASE_URL = 'http://localhost:3000'; // THAY ĐỔI DÒNG NÀY KHI TRIỂN KHAI
 
-        const displayUsernameElement = document.getElementById('displayUsername');
-        const logoutButton = document.getElementById('logoutButton');
+        const profileUsername = document.getElementById('profileUsername');
+        const profileEmail = document.getElementById('profileEmail');
+        const profileAvatar = document.getElementById('profileAvatar');
+        const coverPhoto = document.getElementById('coverPhoto');
+        const bioText = document.getElementById('bioText');
+        const locationText = document.getElementById('locationText');
+        const dobText = document.getElementById('dobText');
+        const genderText = document.getElementById('genderText');
+        const relationshipText = document.getElementById('relationshipText');
+
+        const bioInput = document.getElementById('bioInput');
+        const locationInput = document.getElementById('locationInput');
+        const dobInput = document.getElementById('dobInput');
+        const genderSelect = document.getElementById('genderSelect');
+        const relationshipInput = document.getElementById('relationshipInput');
+
+        const editProfileBtn = document.getElementById('editProfileBtn');
+        const saveProfileBtn = document.getElementById('saveProfileBtn');
+        const profileMessage = document.getElementById('profileMessage');
+
+        const editAvatarBtn = document.getElementById('editAvatarBtn');
+        const avatarUpload = document.getElementById('avatarUpload');
+        const editCoverBtn = document.getElementById('editCoverBtn');
+        const coverPhotoUpload = document.getElementById('coverPhotoUpload');
+
+        const addFriendBtn = document.getElementById('addFriendBtn');
+        const acceptFriendBtn = document.getElementById('acceptFriendBtn');
+        const rejectFriendBtn = document.getElementById('rejectFriendBtn');
+        const unfriendBtn = document.getElementById('unfriendBtn');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const friendsList = document.getElementById('friendsList');
+        const friendsCount = document.getElementById('friendsCount');
         const smallUserAvatar = document.getElementById('smallUserAvatar');
-
-        const profileDisplayName = document.getElementById('profileDisplayName');
-        const profileStatus = document.getElementById('profileStatus');
-        const profileMood = document.getElementById('profileMood');
-        const profileOnlineStatus = document.getElementById('profileOnlineStatus');
-        const onlineIndicator = document.getElementById('onlineIndicator');
-        const displayAvatar = document.getElementById('displayAvatar');
-        const displayCoverPhoto = document.getElementById('displayCoverPhoto');
-        const editProfileButton = document.getElementById('editProfileButton');
-
-        const profileEditModal = document.getElementById('profileEditModal');
-        const closeModalButton = profileEditModal.querySelector('.close-button');
-        const editProfileForm = document.getElementById('editProfileForm');
-        const editStatusInput = document.getElementById('editStatus');
-        const editMoodInput = document.getElementById('editMood');
-        const moodSelectorButtons = document.querySelectorAll('.mood-selector button');
-        const editOnlineStatusSelect = document.getElementById('editOnlineStatus');
-        const editProfileMessage = document.getElementById('editProfileMessage');
-
-        const avatarUploadInput = document.getElementById('avatarUpload');
-        const coverPhotoUploadInput = document.getElementById('coverPhotoUpload');
+        const navbarProfileLink = document.getElementById('profileLink');
+        const logoutBtn = document.getElementById('logoutBtn');
 
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUserEmail = urlParams.get('email') || localStorage.getItem('loggedInUserEmail');
         const loggedInUserEmail = localStorage.getItem('loggedInUserEmail');
-        const loggedInUsername = localStorage.getItem('loggedInUsername');
 
-        if (loggedInUserEmail) {
-            displayUsernameElement.textContent = loggedInUsername || loggedInUserEmail;
-            profileDisplayName.textContent = loggedInUsername || loggedInUserEmail;
-            fetchUserProfile(loggedInUserEmail);
-        } else {
+        if (!loggedInUserEmail) {
             window.location.href = 'login.html';
+        } else {
+            // Cập nhật ảnh đại diện và tên người dùng trên navbar
+            updateNavbarProfile(loggedInUserEmail);
         }
 
-        // --- Hàm xử lý đăng xuất ---
-        logoutButton.addEventListener('click', async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/logout`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: loggedInUserEmail })
-                });
-                if (response.ok) {
-                    console.log('Đăng xuất thành công ở server.');
-                } else {
-                    console.error('Lỗi khi đăng xuất ở server.');
-                }
-            } catch (error) {
-                console.error('Lỗi kết nối khi đăng xuất:', error);
-            } finally {
-                localStorage.removeItem('loggedInUserEmail');
-                localStorage.removeItem('loggedInUsername');
-                window.location.href = 'login.html';
-            }
-        });
+        // Ẩn/hiện các nút tùy thuộc vào việc đây là profile của người dùng hiện tại hay người khác
+        if (targetUserEmail === loggedInUserEmail) {
+            editProfileBtn.style.display = 'block';
+            editAvatarBtn.style.display = 'block';
+            editCoverBtn.style.display = 'block';
+            addFriendBtn.style.display = 'none';
+            acceptFriendBtn.style.display = 'none';
+            rejectFriendBtn.style.display = 'none';
+            unfriendBtn.style.display = 'none';
+            sendMessageBtn.style.display = 'none';
+            profileEmail.textContent = `(${targetUserEmail})`; // Hiển thị email đầy đủ nếu là profile của mình
+        } else {
+            editProfileBtn.style.display = 'none';
+            editAvatarBtn.style.display = 'none';
+            editCoverBtn.style.display = 'none';
+            profileEmail.textContent = ''; // Không hiển thị email nếu là profile của người khác (hoặc chỉ một phần)
+        }
 
-        // --- Chức năng Profile ---
 
-        // Hàm tải thông tin profile và hiển thị
-        async function fetchUserProfile(email) {
+        // Hàm tải thông tin profile
+        async function fetchProfile(email) {
             try {
-                const response = await fetch(`${API_BASE_URL}/profile/${email}`);
+                const response = await fetch(`${API_BASE_URL}/api/profile/${email}`);
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Không thể tải profile.');
+                    throw new Error('Không thể tải profile.');
                 }
                 const userData = await response.json();
                 const profile = userData.profile;
 
-                profileStatus.textContent = profile.status || 'Chưa cập nhật';
-                profileMood.textContent = profile.mood || 'Chưa cập nhật';
-
-                let onlineText = '';
-                onlineIndicator.className = 'status-indicator';
-                if (profile.isOnline) {
-                    onlineText = 'Online';
-                    if (profile.status && profile.status.toLowerCase() === 'bận') {
-                        onlineIndicator.classList.add('busy');
-                        onlineText = 'Bận';
-                    } else if (profile.status && profile.status.toLowerCase() === 'đi vắng') {
-                        onlineIndicator.classList.add('away');
-                        onlineText = 'Đi vắng';
-                    } else {
-                        onlineIndicator.classList.add('online');
-                    }
+                profileUsername.textContent = userData.username;
+                if (targetUserEmail !== loggedInUserEmail) { // Chỉ hiển thị email nếu là profile của mình
+                    profileEmail.textContent = `(${userData.email})`;
                 } else {
-                    onlineText = 'Offline';
+                    profileEmail.textContent = `(${userData.email})`;
                 }
-                profileOnlineStatus.textContent = onlineText;
 
-                displayAvatar.src = profile.avatar ? `http://localhost:3000${profile.avatar}` : 'https://via.placeholder.com/150';
-                displayCoverPhoto.src = profile.coverPhoto ? `http://localhost:3000${profile.coverPhoto}` : 'https://via.placeholder.com/600x200';
-                
-                if (smallUserAvatar) {
-                    smallUserAvatar.src = profile.avatar ? `http://localhost:3000${profile.avatar}` : 'https://via.placeholder.com/30';
+                profileAvatar.src = profile.avatar ? `${API_BASE_URL}${profile.avatar}` : 'https://via.placeholder.com/150';
+                coverPhoto.src = profile.coverPhoto ? `${API_BASE_URL}${profile.coverPhoto}` : 'https://via.placeholder.com/850x315';
+                bioText.textContent = profile.bio || 'Chưa có tiểu sử.';
+                locationText.textContent = profile.location || 'Chưa có địa điểm.';
+                dobText.textContent = profile.dob || 'Chưa có ngày sinh.';
+                genderText.textContent = profile.gender || 'Chưa có giới tính.';
+                relationshipText.textContent = profile.relationship || 'Chưa có tình trạng.';
+
+                // Cập nhật trạng thái nút kết bạn nếu là profile của người khác
+                if (targetUserEmail !== loggedInUserEmail) {
+                    await updateFriendButtonStatus(userData);
                 }
+
+                // Tải danh sách bạn bè
+                renderFriendsList(userData.friends);
 
             } catch (error) {
                 console.error('Lỗi khi tải profile:', error);
+                profileMessage.textContent = `Lỗi: ${error.message}.`;
+                profileMessage.style.color = 'red';
             }
         }
 
-        // Mở modal chỉnh sửa profile
-        editProfileButton.addEventListener('click', async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/profile/${loggedInUserEmail}`);
-                const userData = await response.json();
-                const profile = userData.profile;
+        // Hàm cập nhật trạng thái nút kết bạn
+        async function updateFriendButtonStatus(userData) {
+            const users = await (await fetch(`${API_BASE_URL}/api/users/search?q=${loggedInUserEmail}`)).json();
+            const currentUser = users.find(u => u.email === loggedInUserEmail);
 
-                editStatusInput.value = profile.status || '';
-                editMoodInput.value = profile.mood || '';
-                selectMoodButton(profile.mood);
-                
-                if (profile.isOnline) {
-                    if (profile.status && profile.status.toLowerCase() === 'bận') {
-                        editOnlineStatusSelect.value = 'busy';
-                    } else if (profile.status && profile.status.toLowerCase() === 'đi vắng') {
-                        editOnlineStatusSelect.value = 'away';
-                    } else {
-                        editOnlineStatusSelect.value = 'online';
-                    }
-                } else {
-                    editOnlineStatusSelect.value = 'offline';
-                }
+            addFriendBtn.style.display = 'none';
+            acceptFriendBtn.style.display = 'none';
+            rejectFriendBtn.style.display = 'none';
+            unfriendBtn.style.display = 'none';
+            sendMessageBtn.style.display = 'block'; // Luôn cho phép nhắn tin nếu không phải là profile của mình
 
-                profileEditModal.style.display = 'flex';
-            } catch (error) {
-                console.error('Lỗi khi tải dữ liệu profile để chỉnh sửa:', error);
-                editProfileMessage.textContent = 'Lỗi khi tải dữ liệu profile.';
-                editProfileMessage.style.color = 'red';
-            }
-        });
-
-        // Đóng modal chỉnh sửa profile
-        closeModalButton.addEventListener('click', () => {
-            profileEditModal.style.display = 'none';
-            editProfileMessage.textContent = '';
-        });
-
-        // Xử lý khi click bên ngoài modal để đóng
-        window.addEventListener('click', (event) => {
-            if (event.target == profileEditModal) {
-                profileEditModal.style.display = 'none';
-                editProfileMessage.textContent = '';
-            }
-        });
-
-        // Xử lý chọn cảm xúc
-        moodSelectorButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                selectMoodButton(button.dataset.mood);
-            });
-        });
-
-        function selectMoodButton(mood) {
-            moodSelectorButtons.forEach(btn => {
-                btn.classList.remove('selected');
-            });
-            const selectedButton = document.querySelector(`.mood-selector button[data-mood="${mood}"]`);
-            if (selectedButton) {
-                selectedButton.classList.add('selected');
-                editMoodInput.value = mood;
+            if (currentUser.friends.includes(targetUserEmail)) {
+                unfriendBtn.style.display = 'block';
+            } else if (currentUser.friendRequests.includes(targetUserEmail)) {
+                acceptFriendBtn.style.display = 'block';
+                rejectFriendBtn.style.display = 'block';
+            } else if (userData.friendRequests.includes(loggedInUserEmail)) {
+                // Người dùng hiện tại đã gửi yêu cầu kết bạn đến chủ profile này
+                addFriendBtn.textContent = 'Đã gửi yêu cầu';
+                addFriendBtn.disabled = true;
+                addFriendBtn.style.display = 'block';
             } else {
-                editMoodInput.value = '';
+                addFriendBtn.textContent = 'Thêm bạn bè';
+                addFriendBtn.disabled = false;
+                addFriendBtn.style.display = 'block';
             }
         }
 
-        // Xử lý submit form chỉnh sửa profile
-        editProfileForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
+        // Hàm render danh sách bạn bè
+        async function renderFriendsList(friendsEmails) {
+            friendsList.innerHTML = '';
+            friendsCount.textContent = friendsEmails.length;
 
-            const status = editStatusInput.value.trim();
-            const mood = editMoodInput.value;
-            const onlineStatusValue = editOnlineStatusSelect.value;
-
-            let isOnline = false;
-            let actualStatus = status;
-            if (onlineStatusValue === 'online') {
-                isOnline = true;
-            } else if (onlineStatusValue === 'busy') {
-                isOnline = true;
-                actualStatus = 'Bận';
-            } else if (onlineStatusValue === 'away') {
-                isOnline = true;
-                actualStatus = 'Đi vắng';
-            } else if (onlineStatusValue === 'offline') {
-                isOnline = false;
+            if (friendsEmails.length === 0) {
+                friendsList.innerHTML = '<p>Chưa có bạn bè nào.</p>';
+                return;
             }
 
-            const data = {
-                status: actualStatus,
-                mood: mood,
-                isOnline: isOnline
+            for (const friendEmail of friendsEmails) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/profile/${friendEmail}`);
+                    const friendData = await response.json();
+                    const friendProfile = friendData.profile;
+
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <img src="${friendProfile.avatar ? `${API_BASE_URL}${friendProfile.avatar}` : 'https://via.placeholder.com/30'}" alt="Ảnh bạn bè" class="small-avatar">
+                        <a href="profile.html?email=${friendData.email}">${friendData.username}</a>
+                    `;
+                    friendsList.appendChild(li);
+                } catch (error) {
+                    console.error('Lỗi khi tải thông tin bạn bè:', friendEmail, error);
+                    const li = document.createElement('li');
+                    li.textContent = `Không thể tải thông tin của ${friendEmail}`;
+                    friendsList.appendChild(li);
+                }
+            }
+        }
+
+        // Chế độ chỉnh sửa profile
+        editProfileBtn.addEventListener('click', () => {
+            const isEditing = editProfileBtn.textContent === 'Chỉnh sửa Profile';
+
+            bioText.contentEditable = isEditing ? 'true' : 'false';
+            locationText.contentEditable = isEditing ? 'true' : 'false';
+            dobText.contentEditable = isEditing ? 'true' : 'false';
+            genderText.contentEditable = isEditing ? 'true' : 'false';
+            relationshipText.contentEditable = isEditing ? 'true' : 'false';
+
+            bioInput.value = bioText.textContent === 'Chưa có tiểu sử.' ? '' : bioText.textContent;
+            locationInput.value = locationText.textContent === 'Chưa có địa điểm.' ? '' : locationText.textContent;
+            dobInput.value = dobText.textContent === 'Chưa có ngày sinh.' ? '' : dobText.textContent;
+            genderSelect.value = genderText.textContent === 'Chưa có giới tính.' ? '' : genderText.textContent;
+            relationshipInput.value = relationshipText.textContent === 'Chưa có tình trạng.' ? '' : relationshipText.textContent;
+
+            bioText.style.display = isEditing ? 'none' : 'block';
+            locationText.style.display = isEditing ? 'none' : 'block';
+            dobText.style.display = isEditing ? 'none' : 'block';
+            genderText.style.display = isEditing ? 'none' : 'block';
+            relationshipText.style.display = isEditing ? 'none' : 'block';
+
+            bioInput.style.display = isEditing ? 'block' : 'none';
+            locationInput.style.display = isEditing ? 'block' : 'none';
+            dobInput.style.display = isEditing ? 'block' : 'none';
+            genderSelect.style.display = isEditing ? 'block' : 'none';
+            relationshipInput.style.display = isEditing ? 'block' : 'none';
+
+            editProfileBtn.style.display = isEditing ? 'none' : 'block';
+            saveProfileBtn.style.display = isEditing ? 'block' : 'none';
+        });
+
+        // Lưu profile
+        saveProfileBtn.addEventListener('click', async () => {
+            const updatedData = {
+                bio: bioInput.value.trim(),
+                location: locationInput.value.trim(),
+                dob: dobInput.value.trim(),
+                gender: genderSelect.value,
+                relationship: relationshipInput.value.trim()
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/profile/${loggedInUserEmail}`, {
+                const response = await fetch(`${API_BASE_URL}/api/profile/${loggedInUserEmail}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedData)
                 });
 
                 const result = await response.json();
 
                 if (response.ok) {
-                    editProfileMessage.textContent = result.message;
-                    editProfileMessage.style.color = 'green';
-                    fetchUserProfile(loggedInUserEmail);
-                    setTimeout(() => {
-                        profileEditModal.style.display = 'none';
-                        editProfileMessage.textContent = '';
-                    }, 1500);
+                    profileMessage.textContent = result.message;
+                    profileMessage.style.color = 'green';
+                    // Tải lại profile để hiển thị dữ liệu mới nhất
+                    fetchProfile(loggedInUserEmail);
+                    // Chuyển về chế độ xem
+                    bioText.contentEditable = 'false';
+                    locationText.contentEditable = 'false';
+                    dobText.contentEditable = 'false';
+                    genderText.contentEditable = 'false';
+                    relationshipText.contentEditable = 'false';
+
+                    bioText.style.display = 'block';
+                    locationText.style.display = 'block';
+                    dobText.style.display = 'block';
+                    genderText.style.display = 'block';
+                    relationshipText.style.display = 'block';
+
+                    bioInput.style.display = 'none';
+                    locationInput.style.display = 'none';
+                    dobInput.style.display = 'none';
+                    genderSelect.style.display = 'none';
+                    relationshipInput.style.display = 'none';
+
+                    editProfileBtn.style.display = 'block';
+                    saveProfileBtn.style.display = 'none';
                 } else {
-                    editProfileMessage.textContent = `Lỗi: ${result.message || 'Cập nhật profile không thành công.'}`;
-                    editProfileMessage.style.color = 'red';
+                    profileMessage.textContent = `Lỗi: ${result.message || 'Cập nhật profile không thành công.'}`;
+                    profileMessage.style.color = 'red';
                 }
             } catch (error) {
-                editProfileMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
-                editProfileMessage.style.color = 'red';
+                profileMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                profileMessage.style.color = 'red';
                 console.error('Lỗi khi cập nhật profile:', error);
             }
         });
 
-        // Xử lý tải lên ảnh đại diện
-        avatarUploadInput.addEventListener('change', async (event) => {
+        // Tải ảnh đại diện
+        editAvatarBtn.addEventListener('click', () => {
+            avatarUpload.click();
+        });
+
+        avatarUpload.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -355,29 +374,33 @@
             formData.append('avatar', file);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/profile/${loggedInUserEmail}/avatar`, {
+                const response = await fetch(`${API_BASE_URL}/api/profile/${loggedInUserEmail}/avatar`, {
                     method: 'POST',
                     body: formData,
                 });
-
                 const result = await response.json();
                 if (response.ok) {
-                    displayAvatar.src = `http://localhost:3000${result.avatarUrl}`;
-                    if (smallUserAvatar) {
-                        smallUserAvatar.src = `http://localhost:3000${result.avatarUrl}`;
-                    }
-                    alert('Cập nhật ảnh đại diện thành công!');
+                    profileMessage.textContent = result.message;
+                    profileMessage.style.color = 'green';
+                    profileAvatar.src = `${API_BASE_URL}${result.avatarUrl}`;
+                    updateNavbarProfile(loggedInUserEmail); // Cập nhật ảnh đại diện trên navbar
                 } else {
-                    alert(`Lỗi khi cập nhật ảnh đại diện: ${result.message || 'Không thành công.'}`);
+                    profileMessage.textContent = `Lỗi: ${result.message || 'Tải ảnh đại diện thất bại.'}`;
+                    profileMessage.style.color = 'red';
                 }
             } catch (error) {
-                alert('Lỗi kết nối khi tải ảnh đại diện.');
+                profileMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                profileMessage.style.color = 'red';
                 console.error('Lỗi khi tải ảnh đại diện:', error);
             }
         });
 
-        // Xử lý tải lên ảnh nền
-        coverPhotoUploadInput.addEventListener('change', async (event) => {
+        // Tải ảnh nền
+        editCoverBtn.addEventListener('click', () => {
+            coverPhotoUpload.click();
+        });
+
+        coverPhotoUpload.addEventListener('change', async (event) => {
             const file = event.target.files[0];
             if (!file) return;
 
@@ -385,27 +408,182 @@
             formData.append('coverPhoto', file);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/profile/${loggedInUserEmail}/cover-photo`, {
+                const response = await fetch(`${API_BASE_URL}/api/profile/${loggedInUserEmail}/cover-photo`, {
                     method: 'POST',
                     body: formData,
                 });
-
                 const result = await response.json();
                 if (response.ok) {
-                    displayCoverPhoto.src = `http://localhost:3000${result.coverPhotoUrl}`;
-                    alert('Cập nhật ảnh nền thành công!');
+                    profileMessage.textContent = result.message;
+                    profileMessage.style.color = 'green';
+                    coverPhoto.src = `${API_BASE_URL}${result.coverPhotoUrl}`;
                 } else {
-                    alert(`Lỗi khi cập nhật ảnh nền: ${result.message || 'Không thành công.'}`);
+                    profileMessage.textContent = `Lỗi: ${result.message || 'Tải ảnh nền thất bại.'}`;
+                    profileMessage.style.color = 'red';
                 }
             } catch (error) {
-                alert('Lỗi kết nối khi tải ảnh nền.');
+                profileMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                profileMessage.style.color = 'red';
                 console.error('Lỗi khi tải ảnh nền:', error);
             }
         });
 
+        // Xử lý nút Thêm bạn bè
+        addFriendBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/friend-request/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fromEmail: loggedInUserEmail, toEmail: targetUserEmail })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    profileMessage.textContent = result.message;
+                    profileMessage.style.color = 'green';
+                    fetchProfile(targetUserEmail); // Tải lại profile để cập nhật trạng thái nút
+                } else {
+                    profileMessage.textContent = `Lỗi: ${result.message || 'Gửi yêu cầu thất bại.'}`;
+                    profileMessage.style.color = 'red';
+                }
+            } catch (error) {
+                profileMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                profileMessage.style.color = 'red';
+                console.error('Lỗi khi gửi yêu cầu kết bạn:', error);
+            }
+        });
+
+        // Xử lý nút Chấp nhận bạn bè
+        acceptFriendBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/friend-request/accept`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ acceptorEmail: loggedInUserEmail, senderEmail: targetUserEmail })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    profileMessage.textContent = result.message;
+                    profileMessage.style.color = 'green';
+                    fetchProfile(targetUserEmail); // Tải lại profile để cập nhật trạng thái nút
+                } else {
+                    profileMessage.textContent = `Lỗi: ${result.message || 'Chấp nhận yêu cầu thất bại.'}`;
+                    profileMessage.style.color = 'red';
+                }
+            } catch (error) {
+                profileMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                profileMessage.style.color = 'red';
+                console.error('Lỗi khi chấp nhận yêu cầu kết bạn:', error);
+            }
+        });
+
+        // Xử lý nút Từ chối bạn bè
+        rejectFriendBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/friend-request/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ receiverEmail: loggedInUserEmail, senderEmail: targetUserEmail })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    profileMessage.textContent = result.message;
+                    profileMessage.style.color = 'green';
+                    fetchProfile(targetUserEmail); // Tải lại profile để cập nhật trạng thái nút
+                } else {
+                    profileMessage.textContent = `Lỗi: ${result.message || 'Từ chối yêu cầu thất bại.'}`;
+                    profileMessage.style.color = 'red';
+                }
+            } catch (error) {
+                profileMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                profileMessage.style.color = 'red';
+                console.error('Lỗi khi từ chối yêu cầu kết bạn:', error);
+            }
+        });
+
+        // Xử lý nút Hủy kết bạn
+        unfriendBtn.addEventListener('click', async () => {
+            if (!confirm('Bạn có chắc chắn muốn hủy kết bạn với người này?')) {
+                return;
+            }
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/friends/unfriend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user1Email: loggedInUserEmail, user2Email: targetUserEmail })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    profileMessage.textContent = result.message;
+                    profileMessage.style.color = 'green';
+                    fetchProfile(targetUserEmail); // Tải lại profile để cập nhật trạng thái nút
+                } else {
+                    profileMessage.textContent = `Lỗi: ${result.message || 'Hủy kết bạn thất bại.'}`;
+                    profileMessage.style.color = 'red';
+                }
+            } catch (error) {
+                profileMessage.textContent = `Lỗi kết nối: ${error.message}. Vui lòng thử lại.`;
+                profileMessage.style.color = 'red';
+                console.error('Lỗi khi hủy kết bạn:', error);
+            }
+        });
+
+        // Xử lý nút Nhắn tin
+        sendMessageBtn.addEventListener('click', () => {
+            if (targetUserEmail) {
+                window.location.href = `chat.html?email=${targetUserEmail}`;
+            }
+        });
+
+
+        // Hàm cập nhật ảnh đại diện nhỏ trên navbar
+        async function updateNavbarProfile(email) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/profile/${email}`);
+                if (!response.ok) {
+                    throw new Error('Không thể tải profile cho navbar.');
+                }
+                const userData = await response.json();
+                const profile = userData.profile;
+
+                if (smallUserAvatar) {
+                    smallUserAvatar.src = profile.avatar ? `${API_BASE_URL}${profile.avatar}` : 'https://via.placeholder.com/30';
+                }
+                if (navbarProfileLink) {
+                    navbarProfileLink.textContent = userData.username;
+                    navbarProfileLink.href = `profile.html?email=${loggedInUserEmail}`;
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải ảnh đại diện nhỏ cho navbar:', error);
+                if (smallUserAvatar) {
+                    smallUserAvatar.src = 'https://via.placeholder.com/30'; // fallback
+                }
+            }
+        }
+
+        // Tải profile khi trang được load
         document.addEventListener('DOMContentLoaded', () => {
-            if (loggedInUserEmail) {
-                fetchUserProfile(loggedInUserEmail);
+            if (targetUserEmail) {
+                fetchProfile(targetUserEmail);
+            } else {
+                console.error('Không tìm thấy email người dùng để tải profile.');
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/logout`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    localStorage.removeItem('loggedInUserEmail');
+                    localStorage.removeItem('loggedInUsername');
+                    window.location.href = 'login.html';
+                } else {
+                    alert('Đăng xuất không thành công.');
+                }
+            } catch (error) {
+                console.error('Lỗi khi đăng xuất:', error);
+                alert('Lỗi kết nối khi đăng xuất.');
             }
         });
     </script>
