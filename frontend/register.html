@@ -42,7 +42,9 @@
             const data = { email, username, password };
 
             try {
-                const response = await fetch('http://localhost:3000/api/register', {
+                // Sửa URL này thành URL Render của backend của bạn
+                const API_BASE_URL = 'http://localhost:3000'; // THAY ĐỔI DÒNG NÀY KHI TRIỂN KHAI
+                const response = await fetch(`${API_BASE_URL}/api/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
