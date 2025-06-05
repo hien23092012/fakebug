@@ -25,643 +25,573 @@ const POSTS_FILE = path.join(__dirname, 'posts.json');
 const MESSAGES_FILE = path.join(__dirname, 'messages.json'); // File lưu trữ tin nhắn
 
 // Cấu hình Multer để lưu trữ file ảnh
-const UPLOAD_DIR = path.join(__dirname, 'uploads/'); // Thư mục uploads nằm trong node_app
+const UPLOAD_DIR = path.join(__dirname, 'uploads');
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        // Tạo thư mục nếu nó chưa tồn tại
-        fs.mkdir(UPLOAD_DIR, { recursive: true }).then(() => {
-            cb(null, UPLOAD_DIR);
-        }).catch(err => {
-            console.error('Lỗi khi tạo thư mục uploads:', err);
-            cb(err);
-        });
+    destination: async (req, file, cb) => {
+        const userEmail = req.params.email;
+        if (!userEmail) {
+            return cb(new Error('Email người dùng không được cung cấp.'));
+        }
+        const userUploadDir = path.join(UPLOAD_DIR, userEmail);
+        try {
+            await fs.mkdir(userUploadDir, { recursive: true }); // Tạo thư mục nếu chưa có
+            cb(null, userUploadDir);
+        } catch (error) {
+            cb(error);
+        }
     },
     filename: (req, file, cb) => {
-        // Đặt tên file để tránh trùng lặp: email_loaiAnh_timestamp.ext
-        const email = req.body.email || req.params.email; // Lấy email từ body hoặc params
-        const fileExtension = file.originalname.split('.').pop();
-        const fileName = `${email.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.${fileExtension}`;
-        cb(null, fileName);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
 const upload = multer({ storage: storage });
 
-// Middleware:
-app.use(express.json());
-app.use(cors());
+// Middleware
+app.use(cors()); // Sử dụng CORS
+app.use(express.json()); // Cho phép Express đọc JSON từ request body
+app.use(express.static(path.join(__dirname, '../frontend'))); // Phục vụ các file tĩnh từ thư mục frontend
+app.use('/uploads', express.static(UPLOAD_DIR)); // Phục vụ các file ảnh đã tải lên
 
-// Cung cấp các file tĩnh từ thư mục 'uploads' (nằm trong node_app)
-app.use('/uploads', express.static(UPLOAD_DIR));
-
-// Phục vụ các file tĩnh từ thư mục 'frontend'
-app.use(express.static(path.join(__dirname, '../frontend')));
-
-// Redirect đường dẫn gốc '/' đến login.html
-app.get('/', (req, res) => {
-    res.redirect('/login.html');
-});
-
-// --- Socket.IO Chat Logic ---
-io.on('connection', (socket) => {
-    console.log(`Người dùng đã kết nối: ${socket.id}`);
-
-    // Khi người dùng tham gia phòng chat (ví dụ: phòng chat của email của họ)
-    socket.on('join_chat', async (userEmail) => {
-        socket.join(userEmail); // Tham gia phòng theo email
-        console.log(`Người dùng ${userEmail} đã tham gia phòng chat.`);
-
-        // Cập nhật trạng thái online của người dùng
-        try {
-            const users = await loadData(USERS_FILE, {});
-            if (users[userEmail] && users[userEmail].profile) {
-                users[userEmail].profile.isOnline = true;
-                await saveData(USERS_FILE, users);
-                io.emit('user_status_changed', { email: userEmail, isOnline: true }); // Thông báo cho tất cả client
-            }
-        } catch (error) {
-            console.error('Lỗi khi cập nhật trạng thái online khi join chat:', error);
-        }
-    });
-
-    // Khi người dùng gửi tin nhắn
-    socket.on('send_message', async ({ senderEmail, receiverEmail, content }) => {
-        if (!senderEmail || !receiverEmail || !content) {
-            console.error('Dữ liệu tin nhắn không hợp lệ:', { senderEmail, receiverEmail, content });
-            return;
-        }
-
-        console.log(`Tin nhắn từ ${senderEmail} đến ${receiverEmail}: ${content}`);
-
-        try {
-            const messages = await loadData(MESSAGES_FILE, []);
-            const newMessage = {
-                id: messages.length > 0 ? Math.max(...messages.map(m => m.id || 0)) + 1 : 1,
-                sender: senderEmail,
-                receiver: receiverEmail,
-                content: content,
-                timestamp: Date.now()
-            };
-            messages.push(newMessage);
-            await saveData(MESSAGES_FILE, messages);
-
-            // Gửi tin nhắn đến người gửi (để hiển thị tin nhắn của chính họ)
-            socket.emit('receive_message', newMessage);
-
-            // Gửi tin nhắn đến người nhận nếu họ đang online và trong cùng phòng chat
-            const receiverSockets = await io.in(receiverEmail).fetchSockets();
-            if (receiverSockets.length > 0) {
-                io.to(receiverEmail).emit('receive_message', newMessage);
-            } else {
-                console.log(`Người dùng ${receiverEmail} không online hoặc không trong phòng chat. Tin nhắn sẽ được lưu.`);
-            }
-
-        } catch (error) {
-            console.error('Lỗi khi gửi/lưu tin nhắn:', error);
-        }
-    });
-
-    // Khi người dùng ngắt kết nối
-    socket.on('disconnect', async () => {
-        console.log(`Người dùng đã ngắt kết nối: ${socket.id}`);
-        // Logic phức tạp để tìm userEmail và cập nhật isOnline = false ở đây.
-        // Tốt hơn nên cập nhật trạng thái offline khi người dùng chủ động đăng xuất.
-    });
-});
-
-// API để lấy lịch sử tin nhắn giữa hai người dùng
-app.get('/api/messages/:user1Email/:user2Email', async (req, res) => {
-    const { user1Email, user2Email } = req.params;
-    try {
-        const messages = await loadData(MESSAGES_FILE, []);
-        const conversation = messages.filter(msg =>
-            (msg.sender === user1Email && msg.receiver === user2Email) ||
-            (msg.sender === user2Email && msg.receiver === user1Email)
-        ).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // Sắp xếp theo thời gian, an toàn với msg không có timestamp
-
-        res.status(200).json(conversation);
-    } catch (error) {
-        console.error('Lỗi khi lấy lịch sử tin nhắn:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi lấy lịch sử tin nhắn.' });
-    }
-});
-
-
-// --- Hàm trợ giúp để đọc và ghi dữ liệu người dùng/bài đăng ---
-
-/**
- * Tải dữ liệu từ file JSON.
- * @param {string} filePath Đường dẫn đến file JSON.
- * @param {object|Array} defaultData Dữ liệu mặc định trả về nếu file không tồn tại/trống.
- * @returns {Promise<object|Array>} Dữ liệu từ file JSON.
- */
-async function loadData(filePath, defaultData) {
+// Hàm đọc dữ liệu từ file JSON
+async function readJsonFile(filePath) {
     try {
         const data = await fs.readFile(filePath, 'utf8');
-        if (data.trim() === '') {
-            return defaultData;
-        }
         return JSON.parse(data);
     } catch (error) {
-        if (error.code === 'ENOENT' || error.name === 'SyntaxError') {
-            return defaultData;
+        if (error.code === 'ENOENT') { // File not found
+            return [];
         }
-        console.error(`Lỗi khi đọc file ${filePath}:`, error);
-        throw new Error(`Không thể đọc dữ liệu từ ${filePath}.`);
+        throw error;
     }
 }
 
-/**
- * Lưu dữ liệu vào file JSON.
- * @param {string} filePath Đường dẫn đến file JSON.
- * @param {object|Array} data Dữ liệu cần lưu.
- * @returns {Promise<void>}
- */
-async function saveData(filePath, data) {
-    try {
-        await fs.writeFile(filePath, JSON.stringify(data, null, 4), 'utf8');
-    } catch (error) {
-        console.error(`Lỗi khi ghi vào file ${filePath}:`, error);
-        throw new Error(`Không thể ghi dữ liệu vào ${filePath}.`);
-    }
+// Hàm ghi dữ liệu vào file JSON
+async function writeJsonFile(filePath, data) {
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
 }
 
-// --- Các Endpoint API của Node.js (còn lại) ---
-
-// Endpoint đăng ký người dùng
+// Route đăng ký
 app.post('/api/register', async (req, res) => {
-    console.log('Nhận yêu cầu đăng ký:', req.body);
-    const { email, password, username } = req.body;
+    const { email, username, password } = req.body;
 
-    if (!email || !password || !username) {
-        return res.status(400).json({ message: 'Vui lòng cung cấp email, mật khẩu và tên đăng nhập.' });
+    if (!email || !username || !password) {
+        return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin.' });
     }
 
     try {
-        const users = await loadData(USERS_FILE, {});
+        const users = await readJsonFile(USERS_FILE);
 
-        if (users[email]) {
-            return res.status(409).json({ message: 'Email này đã được đăng ký.' });
+        if (users.some(user => user.email === email)) {
+            return res.status(409).json({ message: 'Email đã được đăng ký.' });
         }
 
-        const usernameExists = Object.values(users).some(user => user.username && user.username.toLowerCase() === username.toLowerCase());
-        if (usernameExists) {
-            return res.status(409).json({ message: 'Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác.' });
-        }
+        // Hash mật khẩu trước khi lưu
+        const hashedPassword = await bcrypt.hash(password, 10); // 10 là saltRounds
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        users[email] = {
-            username: username,
+        const newUser = {
+            email,
+            username,
             password: hashedPassword,
             profile: {
-                avatar: '',
-                coverPhoto: '',
-                status: '',
-                mood: '',
-                isOnline: false
+                bio: '',
+                location: '',
+                dob: '',
+                gender: '',
+                relationship: '',
+                avatar: null,
+                coverPhoto: null
             },
-            friends: [],
-            friendRequestsSent: [],
-            friendRequestsReceived: []
+            friendRequests: [], // Danh sách các yêu cầu kết bạn đã nhận
+            friends: [] // Danh sách bạn bè
         };
-        await saveData(USERS_FILE, users);
+        users.push(newUser);
+        await writeJsonFile(USERS_FILE, users);
 
-        console.log(`Người dùng mới đã đăng ký: ${email}, Username: ${username}`);
         res.status(201).json({ message: 'Đăng ký thành công!' });
-
     } catch (error) {
-        console.error('Lỗi khi đăng ký người dùng:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi đăng ký.' });
+        console.error('Lỗi khi đăng ký:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
     }
 });
 
-// Endpoint đăng nhập người dùng
+// Route đăng nhập
 app.post('/api/login', async (req, res) => {
-    console.log('Nhận yêu cầu đăng nhập:', req.body);
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return res.status(400).json({ message: 'Vui lòng cung cấp email và mật khẩu.' });
+        return res.status(400).json({ message: 'Vui lòng điền đầy đủ email và mật khẩu.' });
     }
 
     try {
-        const users = await loadData(USERS_FILE, {});
-        const user = users[email];
+        const users = await readJsonFile(USERS_FILE);
+        const user = users.find(u => u.email === email);
 
         if (!user) {
             return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng.' });
         }
 
+        // So sánh mật khẩu đã hash
         const isMatch = await bcrypt.compare(password, user.password);
 
-        if (isMatch) {
-            console.log(`Người dùng đã đăng nhập: ${email}`);
-            if (user.profile) {
-                user.profile.isOnline = true;
-                await saveData(USERS_FILE, users);
-            }
-            res.status(200).json({ message: 'Đăng nhập thành công!', user: { email, username: user.username, profile: user.profile } });
-        } else {
-            res.status(401).json({ message: 'Email hoặc mật khẩu không đúng.' });
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng.' });
         }
 
+        res.status(200).json({ message: 'Đăng nhập thành công!', user: { email: user.email, username: user.username } });
     } catch (error) {
-        console.error('Lỗi khi đăng nhập người dùng:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi đăng nhập.' });
+        console.error('Lỗi khi đăng nhập:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
     }
 });
 
-// Endpoint đăng xuất người dùng (cập nhật trạng thái isOnline về false)
-app.post('/api/logout', async (req, res) => {
-    const { email } = req.body;
-
-    if (!email) {
-        return res.status(400).json({ message: 'Vui lòng cung cấp email.' });
-    }
-
-    try {
-        const users = await loadData(USERS_FILE, {});
-        if (users[email] && users[email].profile) {
-            users[email].profile.isOnline = false;
-            await saveData(USERS_FILE, users);
-            io.emit('user_status_changed', { email: email, isOnline: false }); // Thông báo cho tất cả client
-            console.log(`Người dùng ${email} đã đăng xuất.`);
-            res.status(200).json({ message: 'Đăng xuất thành công.' });
-        } else {
-            res.status(404).json({ message: 'Người dùng không tồn tại.' });
-        }
-    } catch (error) {
-        console.error('Lỗi khi đăng xuất người dùng:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi đăng xuất.' });
-    }
+// Route đăng xuất
+app.post('/api/logout', (req, res) => {
+    // Trong một ứng dụng thực tế, bạn sẽ invalidate token hoặc session ở đây.
+    // Với ứng dụng này, chỉ cần thông báo thành công.
+    res.status(200).json({ message: 'Đăng xuất thành công.' });
 });
 
-// Endpoint lấy thông tin profile của một người dùng
-app.get('/api/profile/:email', async (req, res) => {
-    const userEmail = req.params.email;
-    try {
-        const users = await loadData(USERS_FILE, {});
-        const user = users[userEmail];
-        if (user && user.profile) {
-            res.status(200).json({
-                email: userEmail,
-                username: user.username,
-                profile: user.profile,
-                friends: user.friends || [],
-                friendRequestsSent: user.friendRequestsSent || [],
-                friendRequestsReceived: user.friendRequestsReceived || []
-            });
-        } else {
-            res.status(404).json({ message: 'Người dùng không tồn tại hoặc không có thông tin profile.' });
-        }
-    } catch (error) {
-        console.error('Lỗi khi lấy thông tin profile:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi lấy thông tin profile.' });
-    }
-});
-
-// Endpoint để cập nhật thông tin profile (trạng thái, cảm xúc)
-app.put('/api/profile/:email', async (req, res) => {
-    const userEmail = req.params.email;
-    const { status, mood, isOnline } = req.body;
-
-    try {
-        const users = await loadData(USERS_FILE, {});
-        if (!users[userEmail]) {
-            return res.status(404).json({ message: 'Người dùng không tồn tại.' });
-        }
-
-        if (users[userEmail].profile) {
-            if (status !== undefined) users[userEmail].profile.status = status;
-            if (mood !== undefined) users[userEmail].profile.mood = mood;
-            if (isOnline !== undefined) users[userEmail].profile.isOnline = isOnline;
-        } else {
-            users[userEmail].profile = {
-                avatar: '',
-                coverPhoto: '',
-                status: status || '',
-                mood: mood || '',
-                isOnline: isOnline || false
-            };
-        }
-
-        await saveData(USERS_FILE, users);
-        console.log(`Profile của ${userEmail} đã được cập nhật.`);
-        // Thông báo thay đổi trạng thái online cho tất cả client nếu isOnline thay đổi
-        if (isOnline !== undefined) {
-             io.emit('user_status_changed', { email: userEmail, isOnline: isOnline });
-        }
-        res.status(200).json({ message: 'Cập nhật profile thành công!', profile: users[userEmail].profile });
-
-    } catch (error) {
-        console.error('Lỗi khi cập nhật profile:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi cập nhật profile.' });
-    }
-});
-
-// Endpoint để tải lên ảnh đại diện
-app.post('/api/profile/:email/avatar', upload.single('avatar'), async (req, res) => {
-    const userEmail = req.params.email;
-    if (!req.file) {
-        return res.status(400).json({ message: 'Vui lòng chọn một file ảnh.' });
-    }
-
-    try {
-        const users = await loadData(USERS_FILE, {});
-        if (!users[userEmail]) {
-            await fs.unlink(req.file.path);
-            return res.status(404).json({ message: 'Người dùng không tồn tại.' });
-        }
-
-        const avatarPath = `/uploads/${req.file.filename}`;
-        if (users[userEmail].profile) {
-            users[userEmail].profile.avatar = avatarPath;
-        } else {
-            users[userEmail].profile = {
-                avatar: avatarPath,
-                coverPhoto: '',
-                status: '',
-                mood: '',
-                isOnline: false
-            };
-        }
-        await saveData(USERS_FILE, users);
-
-        console.log(`Ảnh đại diện của ${userEmail} đã được cập nhật: ${avatarPath}`);
-        res.status(200).json({ message: 'Cập nhật ảnh đại diện thành công!', avatarUrl: avatarPath });
-
-    } catch (error) {
-        console.error('Lỗi khi cập nhật ảnh đại diện:', error);
-        if (req.file && req.file.path) {
-            await fs.unlink(req.file.path).catch(err => console.error('Lỗi khi xóa file ảnh lỗi:', err));
-        }
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi cập nhật ảnh đại diện.' });
-    }
-});
-
-// Endpoint để tải lên ảnh nền
-app.post('/api/profile/:email/cover-photo', upload.single('coverPhoto'), async (req, res) => {
-    const userEmail = req.params.email;
-    if (!req.file) {
-        return res.status(400).json({ message: 'Vui lòng chọn một file ảnh.' });
-    }
-
-    try {
-        const users = await loadData(USERS_FILE, {});
-        if (!users[userEmail]) {
-            await fs.unlink(req.file.path);
-            return res.status(404).json({ message: 'Người dùng không tồn tại.' });
-        }
-
-        const coverPhotoPath = `/uploads/${req.file.filename}`;
-        if (users[userEmail].profile) {
-            users[userEmail].profile.coverPhoto = coverPhotoPath;
-        } else {
-            users[userEmail].profile = {
-                avatar: '',
-                coverPhoto: coverPhotoPath,
-                status: '',
-                mood: '',
-                isOnline: false
-            };
-        }
-        await saveData(USERS_FILE, users);
-
-        console.log(`Ảnh nền của ${userEmail} đã được cập nhật: ${coverPhotoPath}`);
-        res.status(200).json({ message: 'Cập nhật ảnh nền thành công!', coverPhotoUrl: coverPhotoPath });
-
-    } catch (error) {
-        console.error('Lỗi khi cập nhật ảnh nền:', error);
-        if (req.file && req.file.path) {
-            await fs.unlink(req.file.path).catch(err => console.error('Lỗi khi xóa file ảnh lỗi:', err));
-        }
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi cập nhật ảnh nền.' });
-    }
-});
-
-// Endpoint tạo bài đăng mới
-app.post('/api/posts', async (req, res) => {
-    console.log('Nhận yêu cầu tạo bài đăng:', req.body);
-    const { author_email, content } = req.body;
-
-    if (!author_email || !content) {
-        return res.status(400).json({ message: 'Vui lòng cung cấp email người đăng và nội dung.' });
-    }
-
-    try {
-        const users = await loadData(USERS_FILE, {});
-        if (!users[author_email]) {
-            return res.status(404).json({ message: 'Người dùng không tồn tại.' });
-        }
-
-        const posts = await loadData(POSTS_FILE, []);
-        const newPost = {
-            id: posts.length > 0 ? Math.max(...posts.map(p => p.id || 0)) + 1 : 1,
-            author_email,
-            content,
-            timestamp: Date.now()
-        };
-        posts.push(newPost);
-        await saveData(POSTS_FILE, posts);
-
-        console.log(`Bài đăng mới từ ${author_email}: ${content}`);
-        res.status(201).json({ message: 'Bài đăng đã được tạo thành công!', post: newPost });
-
-    } catch (error) {
-        console.error('Lỗi khi tạo bài đăng:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi tạo bài đăng.' });
-    }
-});
-
-// Endpoint lấy tất cả bài đăng
+// Route lấy tất cả bài đăng
 app.get('/api/posts', async (req, res) => {
-    console.log('Nhận yêu cầu lấy bài đăng.');
     try {
-        const posts = await loadData(POSTS_FILE, []);
-        const sortedPosts = posts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-        res.status(200).json(sortedPosts);
+        const posts = await readJsonFile(POSTS_FILE);
+        // Sắp xếp bài đăng theo thời gian tạo mới nhất lên đầu
+        posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        res.status(200).json(posts);
     } catch (error) {
         console.error('Lỗi khi lấy bài đăng:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi lấy bài đăng.' });
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
     }
 });
 
-// Endpoint tìm kiếm người dùng theo username/email
+// Route tạo bài đăng mới
+app.post('/api/posts', upload.single('image'), async (req, res) => {
+    const { content, authorEmail, authorUsername } = req.body;
+    const imageUrl = req.file ? `/uploads/${authorEmail}/${req.file.filename}` : null;
+
+    if (!content && !imageUrl) {
+        return res.status(400).json({ message: 'Bài đăng không được rỗng.' });
+    }
+    if (!authorEmail || !authorUsername) {
+        return res.status(400).json({ message: 'Thông tin tác giả không hợp lệ.' });
+    }
+
+    try {
+        const posts = await readJsonFile(POSTS_FILE);
+        const newPost = {
+            id: Date.now().toString(), // ID duy nhất
+            content,
+            imageUrl,
+            author: {
+                email: authorEmail,
+                username: authorUsername
+            },
+            createdAt: new Date().toISOString(),
+            likes: [],
+            comments: []
+        };
+        posts.push(newPost);
+        await writeJsonFile(POSTS_FILE, posts);
+
+        // Gửi bài đăng mới đến tất cả các client đang kết nối
+        io.emit('newPost', newPost);
+
+        res.status(201).json({ message: 'Bài đăng đã được tạo thành công!', post: newPost });
+    } catch (error) {
+        console.error('Lỗi khi tạo bài đăng:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
+    }
+});
+
+// Route lấy thông tin profile của người dùng
+app.get('/api/profile/:email', async (req, res) => {
+    const userEmail = req.params.email;
+
+    try {
+        const users = await readJsonFile(USERS_FILE);
+        const user = users.find(u => u.email === userEmail);
+
+        if (!user) {
+            return res.status(404).json({ message: 'Người dùng không tìm thấy.' });
+        }
+
+        // Trả về một bản sao của profile (không bao gồm mật khẩu)
+        const userProfile = {
+            email: user.email,
+            username: user.username,
+            profile: user.profile,
+            friendRequests: user.friendRequests,
+            friends: user.friends
+        };
+        res.status(200).json(userProfile);
+    } catch (error) {
+        console.error('Lỗi khi lấy profile:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
+    }
+});
+
+// Route cập nhật thông tin profile
+app.put('/api/profile/:email', async (req, res) => {
+    const userEmail = req.params.email;
+    const updatedProfileData = req.body; // Dữ liệu profile được gửi từ client
+
+    try {
+        const users = await readJsonFile(USERS_FILE);
+        const userIndex = users.findIndex(u => u.email === userEmail);
+
+        if (userIndex === -1) {
+            return res.status(404).json({ message: 'Người dùng không tìm thấy.' });
+        }
+
+        // Cập nhật các trường profile
+        users[userIndex].profile = {
+            ...users[userIndex].profile,
+            ...updatedProfileData
+        };
+        await writeJsonFile(USERS_FILE, users);
+
+        res.status(200).json({ message: 'Profile đã được cập nhật thành công!', profile: users[userIndex].profile });
+    } catch (error) {
+        console.error('Lỗi khi cập nhật profile:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
+    }
+});
+
+// Route tải ảnh đại diện
+app.post('/api/profile/:email/avatar', upload.single('avatar'), async (req, res) => {
+    const userEmail = req.params.email;
+    const avatarUrl = req.file ? `/uploads/${userEmail}/${req.file.filename}` : null;
+
+    if (!avatarUrl) {
+        return res.status(400).json({ message: 'Không tìm thấy file ảnh đại diện.' });
+    }
+
+    try {
+        const users = await readJsonFile(USERS_FILE);
+        const userIndex = users.findIndex(u => u.email === userEmail);
+
+        if (userIndex === -1) {
+            return res.status(404).json({ message: 'Người dùng không tìm thấy.' });
+        }
+
+        // Xóa ảnh cũ nếu có
+        if (users[userIndex].profile.avatar) {
+            const oldAvatarPath = path.join(__dirname, '../frontend', users[userIndex].profile.avatar);
+            try {
+                await fs.unlink(oldAvatarPath);
+            } catch (unlinkError) {
+                console.warn('Không thể xóa ảnh đại diện cũ (có thể không tồn tại):', unlinkError.message);
+            }
+        }
+
+        users[userIndex].profile.avatar = avatarUrl;
+        await writeJsonFile(USERS_FILE, users);
+
+        res.status(200).json({ message: 'Ảnh đại diện đã được tải lên thành công!', avatarUrl });
+    } catch (error) {
+        console.error('Lỗi khi tải ảnh đại diện:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
+    }
+});
+
+// Route tải ảnh nền
+app.post('/api/profile/:email/cover-photo', upload.single('coverPhoto'), async (req, res) => {
+    const userEmail = req.params.email;
+    const coverPhotoUrl = req.file ? `/uploads/${userEmail}/${req.file.filename}` : null;
+
+    if (!coverPhotoUrl) {
+        return res.status(400).json({ message: 'Không tìm thấy file ảnh nền.' });
+    }
+
+    try {
+        const users = await readJsonFile(USERS_FILE);
+        const userIndex = users.findIndex(u => u.email === userEmail);
+
+        if (userIndex === -1) {
+            return res.status(404).json({ message: 'Người dùng không tìm thấy.' });
+        }
+
+        // Xóa ảnh cũ nếu có
+        if (users[userIndex].profile.coverPhoto) {
+            const oldCoverPhotoPath = path.join(__dirname, '../frontend', users[userIndex].profile.coverPhoto);
+            try {
+                await fs.unlink(oldCoverPhotoPath);
+            } catch (unlinkError) {
+                console.warn('Không thể xóa ảnh nền cũ (có thể không tồn tại):', unlinkError.message);
+            }
+        }
+
+        users[userIndex].profile.coverPhoto = coverPhotoUrl;
+        await writeJsonFile(USERS_FILE, users);
+
+        res.status(200).json({ message: 'Ảnh nền đã được tải lên thành công!', coverPhotoUrl });
+    } catch (error) {
+        console.error('Lỗi khi tải ảnh nền:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
+    }
+});
+
+// Route tìm kiếm người dùng
 app.get('/api/users/search', async (req, res) => {
-    const searchTerm = req.query.q;
-    if (!searchTerm) {
+    const query = req.query.q;
+
+    if (!query) {
         return res.status(400).json({ message: 'Vui lòng cung cấp từ khóa tìm kiếm.' });
     }
 
     try {
-        const users = await loadData(USERS_FILE, {});
-        const normalizedSearchTerm = searchTerm.toLowerCase();
+        const users = await readJsonFile(USERS_FILE);
+        const currentUserEmail = req.headers['x-user-email']; // Lấy email người dùng hiện tại từ header
 
-        const searchResults = Object.keys(users)
-            .filter(email => {
-                const user = users[email];
-                return (user.username && user.username.toLowerCase().includes(normalizedSearchTerm)) ||
-                       (email.toLowerCase().includes(normalizedSearchTerm));
-            })
-            .map(email => {
-                const user = users[email];
+        const searchResults = users
+            .filter(user => user.username.toLowerCase().includes(query.toLowerCase()) || user.email.toLowerCase().includes(query.toLowerCase()))
+            .map(user => {
+                const isFriend = user.friends.includes(currentUserEmail);
+                const hasSentRequest = user.friendRequests.includes(currentUserEmail); // Current user sent request to this user
+                const hasReceivedRequest = users.find(u => u.email === currentUserEmail)?.friendRequests.includes(user.email); // Current user received request from this user
+
                 return {
-                    email: email,
+                    email: user.email,
                     username: user.username,
-                    avatar: user.profile ? user.profile.avatar : '',
-                    isOnline: user.profile ? user.profile.isOnline : false
+                    avatar: user.profile.avatar,
+                    isFriend: isFriend,
+                    requestStatus: hasSentRequest ? 'sent' : (hasReceivedRequest ? 'received' : 'none')
                 };
             });
 
         res.status(200).json(searchResults);
-
     } catch (error) {
         console.error('Lỗi khi tìm kiếm người dùng:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi tìm kiếm người dùng.' });
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
     }
 });
 
-// Endpoint để gửi yêu cầu kết bạn
+// Route gửi yêu cầu kết bạn
 app.post('/api/friend-request/send', async (req, res) => {
-    const { senderEmail, receiverEmail } = req.body;
+    const { fromEmail, toEmail } = req.body;
 
-    if (!senderEmail || !receiverEmail) {
-        return res.status(400).json({ message: 'Vui lòng cung cấp email người gửi và người nhận.' });
-    }
-    if (senderEmail === receiverEmail) {
-        return res.status(400).json({ message: 'Không thể gửi yêu cầu kết bạn cho chính mình.' });
+    if (!fromEmail || !toEmail) {
+        return res.status(400).json({ message: 'Thông tin email không hợp lệ.' });
     }
 
     try {
-        const users = await loadData(USERS_FILE, {});
-        const sender = users[senderEmail];
-        const receiver = users[receiverEmail];
+        const users = await readJsonFile(USERS_FILE);
+        const sender = users.find(u => u.email === fromEmail);
+        const receiver = users.find(u => u.email === toEmail);
 
         if (!sender || !receiver) {
-            return res.status(404).json({ message: 'Người gửi hoặc người nhận không tồn tại.' });
+            return res.status(404).json({ message: 'Người gửi hoặc người nhận không tìm thấy.' });
         }
 
-        if (sender.friends.includes(receiverEmail)) {
-            return res.status(400).json({ message: 'Hai bạn đã là bạn bè.' });
-        }
-        if (sender.friendRequestsSent.includes(receiverEmail)) {
-            return res.status(400).json({ message: 'Bạn đã gửi yêu cầu kết bạn đến người này rồi.' });
-        }
-        if (sender.friendRequestsReceived.includes(receiverEmail)) {
-            return res.status(400).json({ message: 'Người này đã gửi yêu cầu kết bạn cho bạn. Vui lòng chấp nhận.' });
+        // Kiểm tra nếu đã là bạn bè
+        if (sender.friends.includes(toEmail)) {
+            return res.status(400).json({ message: 'Hai người đã là bạn bè.' });
         }
 
-        sender.friendRequestsSent.push(receiverEmail);
-        receiver.friendRequestsReceived.push(senderEmail);
+        // Kiểm tra nếu yêu cầu đã được gửi
+        if (receiver.friendRequests.includes(fromEmail)) {
+            return res.status(400).json({ message: 'Yêu cầu kết bạn đã được gửi trước đó.' });
+        }
 
-        await saveData(USERS_FILE, users);
-        console.log(`Yêu cầu kết bạn từ ${senderEmail} đến ${receiverEmail} đã được gửi.`);
-        res.status(200).json({ message: 'Yêu cầu kết bạn đã được gửi!' });
+        // Kiểm tra nếu người gửi đã nhận yêu cầu từ người nhận (trường hợp này nên chấp nhận luôn)
+        if (sender.friendRequests.includes(toEmail)) {
+            // Chấp nhận yêu cầu ngay lập tức nếu người gửi đã nhận yêu cầu từ người nhận
+            sender.friends.push(toEmail);
+            receiver.friends.push(fromEmail);
+            sender.friendRequests = sender.friendRequests.filter(req => req !== toEmail);
+            await writeJsonFile(USERS_FILE, users);
+            return res.status(200).json({ message: 'Yêu cầu đã được chấp nhận (người nhận đã gửi yêu cầu cho bạn).' });
+        }
 
+        receiver.friendRequests.push(fromEmail);
+        await writeJsonFile(USERS_FILE, users);
+
+        res.status(200).json({ message: 'Yêu cầu kết bạn đã được gửi.' });
     } catch (error) {
         console.error('Lỗi khi gửi yêu cầu kết bạn:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi gửi yêu cầu kết bạn.' });
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
     }
 });
 
-// Endpoint để chấp nhận yêu cầu kết bạn
-app.post('/api/friend-request/accept', async (req, res) => {
-    const { receiverEmail, senderEmail } = req.body;
 
-    if (!senderEmail || !receiverEmail) {
-        return res.status(400).json({ message: 'Vui lòng cung cấp email người gửi và người nhận.' });
+// Route chấp nhận yêu cầu kết bạn
+app.post('/api/friend-request/accept', async (req, res) => {
+    const { acceptorEmail, senderEmail } = req.body;
+
+    if (!acceptorEmail || !senderEmail) {
+        return res.status(400).json({ message: 'Thông tin email không hợp lệ.' });
     }
 
     try {
-        const users = await loadData(USERS_FILE, {});
-        const receiver = users[receiverEmail];
-        const sender = users[senderEmail];
+        const users = await readJsonFile(USERS_FILE);
+        const acceptor = users.find(u => u.email === acceptorEmail);
+        const sender = users.find(u => u.email === senderEmail);
 
-        if (!sender || !receiver) {
-            return res.status(404).json({ message: 'Người dùng không tồn tại.' });
+        if (!acceptor || !sender) {
+            return res.status(404).json({ message: 'Người chấp nhận hoặc người gửi không tìm thấy.' });
         }
 
-        const requestIndex = receiver.friendRequestsReceived.indexOf(senderEmail);
+        // Kiểm tra xem yêu cầu có tồn tại không
+        const requestIndex = acceptor.friendRequests.indexOf(senderEmail);
         if (requestIndex === -1) {
-            return res.status(400).json({ message: 'Không tìm thấy yêu cầu kết bạn từ người này.' });
+            return res.status(404).json({ message: 'Yêu cầu kết bạn không tồn tại.' });
         }
 
-        receiver.friends.push(senderEmail);
-        sender.friends.push(receiverEmail);
+        // Thêm vào danh sách bạn bè của cả hai
+        acceptor.friends.push(senderEmail);
+        sender.friends.push(acceptorEmail);
 
-        receiver.friendRequestsReceived.splice(requestIndex, 1);
-        const sentIndex = sender.friendRequestsSent.indexOf(receiverEmail);
-        if (sentIndex !== -1) {
-            sender.friendRequestsSent.splice(sentIndex, 1);
-        }
+        // Xóa yêu cầu khỏi danh sách chờ của người chấp nhận
+        acceptor.friendRequests.splice(requestIndex, 1);
 
-        await saveData(USERS_FILE, users);
-        console.log(`${receiverEmail} đã chấp nhận yêu cầu kết bạn từ ${senderEmail}.`);
-        res.status(200).json({ message: 'Đã chấp nhận yêu cầu kết bạn!', newFriend: senderEmail });
+        await writeJsonFile(USERS_FILE, users);
 
+        res.status(200).json({ message: 'Yêu cầu kết bạn đã được chấp nhận.' });
     } catch (error) {
         console.error('Lỗi khi chấp nhận yêu cầu kết bạn:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi chấp nhận yêu cầu kết bạn.' });
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
     }
 });
 
-// Endpoint để hủy/từ chối yêu cầu kết bạn hoặc hủy kết bạn
-app.post('/api/friend-request/cancel-reject-unfriend', async (req, res) => {
-    const { userEmail, targetEmail, type } = req.body;
+// Route từ chối yêu cầu kết bạn
+app.post('/api/friend-request/reject', async (req, res) => {
+    const { receiverEmail, senderEmail } = req.body;
 
-    if (!userEmail || !targetEmail || !type) {
-        return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin.' });
+    if (!receiverEmail || !senderEmail) {
+        return res.status(400).json({ message: 'Thông tin email không hợp lệ.' });
     }
 
     try {
-        const users = await loadData(USERS_FILE, {});
-        const user = users[userEmail];
-        const target = users[targetEmail];
+        const users = await readJsonFile(USERS_FILE);
+        const receiver = users.find(u => u.email === receiverEmail);
 
-        if (!user || !target) {
-            return res.status(404).json({ message: 'Người dùng không tồn tại.' });
+        if (!receiver) {
+            return res.status(404).json({ message: 'Người nhận không tìm thấy.' });
         }
 
-        if (type === 'cancel') { // Hủy yêu cầu đã gửi
-            const index = user.friendRequestsSent.indexOf(targetEmail);
-            if (index !== -1) user.friendRequestsSent.splice(index, 1);
-            const targetIndex = target.friendRequestsReceived.indexOf(userEmail);
-            if (targetIndex !== -1) target.friendRequestsReceived.splice(targetIndex, 1);
-            console.log(`${userEmail} đã hủy yêu cầu kết bạn đến ${targetEmail}.`);
-            res.status(200).json({ message: 'Đã hủy yêu cầu kết bạn.' });
-
-        } else if (type === 'reject') { // Từ chối yêu cầu đã nhận
-            const index = user.friendRequestsReceived.indexOf(targetEmail);
-            if (index !== -1) user.friendRequestsReceived.splice(index, 1);
-            const targetIndex = target.friendRequestsSent.indexOf(userEmail);
-            if (targetIndex !== -1) target.friendRequestsSent.splice(targetIndex, 1);
-            console.log(`${userEmail} đã từ chối yêu cầu kết bạn từ ${targetEmail}.`);
-            res.status(200).json({ message: 'Đã từ chối yêu cầu kết bạn.' });
-
-        } else if (type === 'unfriend') { // Hủy kết bạn
-            let index = user.friends.indexOf(targetEmail);
-            if (index !== -1) user.friends.splice(index, 1);
-            index = target.friends.indexOf(userEmail);
-            if (index !== -1) target.friends.splice(index, 1);
-            console.log(`${userEmail} và ${targetEmail} đã hủy kết bạn.`);
-            res.status(200).json({ message: 'Đã hủy kết bạn.' });
-
+        // Xóa yêu cầu khỏi danh sách chờ của người nhận
+        const requestIndex = receiver.friendRequests.indexOf(senderEmail);
+        if (requestIndex > -1) {
+            receiver.friendRequests.splice(requestIndex, 1);
+            await writeJsonFile(USERS_FILE, users);
+            res.status(200).json({ message: 'Yêu cầu kết bạn đã bị từ chối.' });
         } else {
-            return res.status(400).json({ message: 'Loại hành động không hợp lệ.' });
+            res.status(404).json({ message: 'Yêu cầu kết bạn không tìm thấy.' });
+        }
+    } catch (error) {
+        console.error('Lỗi khi từ chối yêu cầu kết bạn:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
+    }
+});
+
+// Route hủy kết bạn
+app.post('/api/friends/unfriend', async (req, res) => {
+    const { user1Email, user2Email } = req.body;
+
+    if (!user1Email || !user2Email) {
+        return res.status(400).json({ message: 'Thông tin email không hợp lệ.' });
+    }
+
+    try {
+        const users = await readJsonFile(USERS_FILE);
+        const user1 = users.find(u => u.email === user1Email);
+        const user2 = users.find(u => u.email === user2Email);
+
+        if (!user1 || !user2) {
+            return res.status(404).json({ message: 'Một hoặc cả hai người dùng không tìm thấy.' });
         }
 
-        await saveData(USERS_FILE, users);
+        // Xóa khỏi danh sách bạn bè của user1
+        const user1FriendIndex = user1.friends.indexOf(user2Email);
+        if (user1FriendIndex > -1) {
+            user1.friends.splice(user1FriendIndex, 1);
+        } else {
+            return res.status(404).json({ message: 'Hai người không phải là bạn bè.' });
+        }
 
+        // Xóa khỏi danh sách bạn bè của user2
+        const user2FriendIndex = user2.friends.indexOf(user1Email);
+        if (user2FriendIndex > -1) {
+            user2.friends.splice(user2FriendIndex, 1);
+        }
+
+        await writeJsonFile(USERS_FILE, users);
+
+        res.status(200).json({ message: 'Hủy kết bạn thành công.' });
     } catch (error) {
-        console.error('Lỗi khi hủy/từ chối/hủy kết bạn:', error);
-        res.status(500).json({ message: 'Đã xảy ra lỗi khi thực hiện hành động.' });
+        console.error('Lỗi khi hủy kết bạn:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
+    }
+});
+
+// Route gửi tin nhắn
+app.post('/api/messages/send', async (req, res) => {
+    const { sender, receiver, message } = req.body;
+
+    if (!sender || !receiver || !message) {
+        return res.status(400).json({ message: 'Tin nhắn không hợp lệ.' });
+    }
+
+    try {
+        const messages = await readJsonFile(MESSAGES_FILE);
+        const newMessage = {
+            id: Date.now().toString(),
+            sender,
+            receiver,
+            message,
+            timestamp: new Date().toISOString()
+        };
+        messages.push(newMessage);
+        await writeJsonFile(MESSAGES_FILE, messages);
+
+        // Gửi tin nhắn qua Socket.IO
+        io.to(sender).emit('privateMessage', newMessage);
+        io.to(receiver).emit('privateMessage', newMessage);
+
+        res.status(201).json({ message: 'Tin nhắn đã được gửi!', sentMessage: newMessage });
+    } catch (error) {
+        console.error('Lỗi khi gửi tin nhắn:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
+    }
+});
+
+// Route lấy tin nhắn giữa hai người dùng
+app.get('/api/messages/:user1Email/:user2Email', async (req, res) => {
+    const { user1Email, user2Email } = req.params;
+
+    try {
+        const messages = await readJsonFile(MESSAGES_FILE);
+        const filteredMessages = messages.filter(msg =>
+            (msg.sender === user1Email && msg.receiver === user2Email) ||
+            (msg.sender === user2Email && msg.receiver === user1Email)
+        );
+        res.status(200).json(filteredMessages);
+    } catch (error) {
+        console.error('Lỗi khi lấy tin nhắn:', error);
+        res.status(500).json({ message: 'Lỗi server nội bộ.' });
     }
 });
 
 
-// Khởi động server Node.js
-server.listen(PORT, () => { // Sử dụng server.listen thay vì app.listen
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    // Khi người dùng gửi email, lưu lại để định danh socket
+    socket.on('setUserId', (email) => {
+        socket.join(email); // Thêm socket vào một phòng có tên là email của người dùng
+        console.log(`User ${email} joined room`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
+
+// Khởi động server
+server.listen(PORT, () => {
     console.log(`Server Node.js đang chạy trên cổng ${PORT}`);
     console.log(`Để truy cập ứng dụng, mở trình duyệt và vào: http://localhost:${PORT}/login.html`);
     console.log(`URL API đăng ký: http://localhost:${PORT}/api/register`);
@@ -676,6 +606,8 @@ server.listen(PORT, () => { // Sử dụng server.listen thay vì app.listen
     console.log(`URL API tìm kiếm người dùng: http://localhost:${PORT}/api/users/search?q=keyword (GET)`);
     console.log(`URL API gửi YCKB: http://localhost:${PORT}/api/friend-request/send (POST)`);
     console.log(`URL API chấp nhận YCKB: http://localhost:${PORT}/api/friend-request/accept (POST)`);
-    console.log(`URL API hủy/từ chối/hủy KB: http://localhost:${PORT}/api/friend-request/cancel-reject-unfriend (POST)`);
+    console.log(`URL API từ chối YCKB: http://localhost:${PORT}/api/friend-request/reject (POST)`);
+    console.log(`URL API hủy kết bạn: http://localhost:${PORT}/api/friends/unfriend (POST)`);
+    console.log(`URL API gửi tin nhắn: http://localhost:${PORT}/api/messages/send (POST)`);
     console.log(`URL API lấy tin nhắn: http://localhost:${PORT}/api/messages/:user1Email/:user2Email (GET)`);
 });
